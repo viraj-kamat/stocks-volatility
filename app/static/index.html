@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stock Volatility Monitor</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>📈 Stock Volatility Monitor</h1>
+            <p>Real-time monitoring of stock price volatility</p>
+        </header>
+
+        <div class="controls">
+            <button id="refreshBtn" class="btn btn-primary">🔄 Refresh Now</button>
+            <span id="lastUpdate" class="last-update">Last update: Never</span>
+        </div>
+
+        <div class="dashboard">
+            <section class="section">
+                <h2>Monitored Stocks</h2>
+                <div id="stocksList" class="stocks-grid">
+                    <div class="loading">Loading stocks...</div>
+                </div>
+            </section>
+
+            <section class="section">
+                <h2>Recent Volatility Alerts</h2>
+                <div id="alertsList" class="alerts-container">
+                    <div class="loading">Loading alerts...</div>
+                </div>
+            </section>
+
+            <section class="section">
+                <h2>Configuration</h2>
+                <div id="configPanel" class="config-panel">
+                    <div class="loading">Loading configuration...</div>
+                </div>
+            </section>
+        </div>
+    </div>
+
+    <script src="/static/app.js"></script>
+</body>
+</html>

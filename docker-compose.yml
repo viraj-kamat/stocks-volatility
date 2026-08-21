@@ -1,0 +1,64 @@
+version: '3.8'
+
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: stocks-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-rootpassword}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-stocks_db}
+      MYSQL_USER: ${MYSQL_USER:-stocks_user}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-stocks_password}
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      timeout: 5s
+      retries: 10
+    networks:
+      - stocks_network
+
+  redis:
+    image: redis:7-alpine
+    container_name: stocks-redis
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      timeout: 5s
+      retries: 10
+    networks:
+      - stocks_network
+
+  app:
+    build: .
+    container_name: stocks-app
+    environment:
+      MYSQL_HOST: mysql
+      MYSQL_USER: ${MYSQL_USER:-stocks_user}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-stocks_password}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-stocks_db}
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+    ports:
+      - "8000:8000"
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./config.yaml:/app/config.yaml
+      - ./app:/app/app
+    networks:
+      - stocks_network
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+
+volumes:
+  mysql_data:
+
+networks:
+  stocks_network:
+    driver: bridge

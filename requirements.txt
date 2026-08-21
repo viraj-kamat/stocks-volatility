@@ -1,0 +1,11 @@
+fastapi==0.104.1
+uvicorn==0.24.0
+sqlalchemy==2.0.23
+mysql-connector-python==8.2.0
+yfinance==0.2.32
+redis==5.0.1
+apscheduler==3.10.4
+pydantic==2.5.0
+pydantic-settings==2.1.0
+python-dotenv==1.0.0
+PyYAML==6.0.1

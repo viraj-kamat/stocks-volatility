@@ -1,0 +1,29 @@
+# Stock Volatility Analysis Configuration
+
+# Stock symbols to monitor
+symbols:
+  - AAPL
+  - GOOGL
+  - MSFT
+  - TSLA
+  - META
+
+# Volatility detection settings
+volatility:
+  # Sharp move threshold in percentage (daily change)
+  threshold: 5.0
+
+  # Period to analyze (in days)
+  lookback_days: 365
+
+# Scheduler settings
+scheduler:
+  # Interval between analysis runs (in hours)
+  interval_hours: 4
+
+# Alert settings
+alerts:
+  # Maximum number of alerts to keep
+  max_history: 1000
+  # Days to keep alert history
+  retention_days: 90
