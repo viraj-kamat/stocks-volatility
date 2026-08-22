@@ -2,6 +2,8 @@ import pandas as pd
 import logging
 from typing import List, Dict, Tuple
 from datetime import datetime
+from app.config import app_config
+from app.utils.datetime_fmt import format_date_short
 
 logger = logging.getLogger(__name__)
 
@@ -39,7 +41,10 @@ class VolatilityAnalyzer:
                     "symbol": symbol,
                     "alert_type": alert_type,
                     "severity": severity,
-                    "message": f"{symbol} moved {row['Percent_Change']:.2f}% on {row['Date'].strftime('%Y-%m-%d')}",
+                    "message": (
+                        f"{symbol} moved {row['Percent_Change']:.2f}% "
+                        f"on {format_date_short(row['Date'], app_config.timezone)}"
+                    ),
                     "triggered_at": row['Date'],
                     "price_at_trigger": float(row['Close']),
                     "percent_change": float(row['Percent_Change']),
@@ -78,8 +83,11 @@ class VolatilityAnalyzer:
                 alert = {
                     "symbol": symbol,
                     "alert_type": "pattern",
-                    "severity": "high",
-                    "message": f"{symbol} bounced sharply after sustained decline on {curr['Date'].strftime('%Y-%m-%d')}",
+                    "severity": self._calculate_severity(curr['Percent_Change']),
+                    "message": (
+                        f"{symbol} bounced sharply after sustained decline "
+                        f"on {format_date_short(curr['Date'], app_config.timezone)}"
+                    ),
                     "triggered_at": curr['Date'],
                     "price_at_trigger": float(curr['Close']),
                     "percent_change": float(curr['Percent_Change']),
@@ -90,14 +98,21 @@ class VolatilityAnalyzer:
         return alerts
 
     def _calculate_severity(self, percent_change: float) -> str:
-        """Calculate severity based on magnitude of change."""
+        """
+        Severity relative to configured threshold T:
+          low    = |change| < T
+          medium = T <= |change| < 3T
+          high   = |change| >= 3T
+        Sharp-move alerts are only created at |change| >= T, so stored
+        alerts are typically medium or high; low is used for Live status.
+        """
         abs_change = abs(percent_change)
-        if abs_change >= 15:
+        t = self.threshold
+        if abs_change >= 3 * t:
             return "high"
-        elif abs_change >= 10:
+        if abs_change >= t:
             return "medium"
-        else:
-            return "low"
+        return "low"
 
     def analyze_volatility(self, data: pd.DataFrame, symbol: str) -> Dict:
         """

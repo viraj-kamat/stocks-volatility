@@ -65,5 +65,9 @@ class AppConfig:
     def alert_retention_days(self) -> int:
         return self.config_data.get("alerts", {}).get("retention_days", 90)
 
+    @property
+    def timezone(self) -> str:
+        return self.config_data.get("timezone", "CT")
+
 
 app_config = AppConfig()

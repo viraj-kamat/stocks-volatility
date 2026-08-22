@@ -13,6 +13,8 @@ class Stock(Base):
     name = Column(String(255), nullable=True)
     last_price = Column(Float, nullable=True)
     last_update = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    # Per-symbol watermark: first/new symbols get full lookback; later runs only newer days
+    last_analyzed_at = Column(DateTime, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
 
 

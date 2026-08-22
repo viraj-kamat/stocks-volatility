@@ -1,16 +1,18 @@
-# Stock Volatility Analysis Configuration
+# StockSpikes Configuration
 
 # Stock symbols to monitor
 symbols:
-  - AAPL
-  - GOOGL
-  - MSFT
+  - RIVN
+  - BNED
   - TSLA
-  - META
+  - NVDA
+  - GOOGL
 
 # Volatility detection settings
 volatility:
-  # Sharp move threshold in percentage (daily change)
+  # Sharp move threshold in percentage (daily change).
+  # Severity bands (T = threshold): low < T, medium < 3T, high >= 3T
+  # Alerts are stored when |change| >= T (medium/high).
   threshold: 5.0
 
   # Period to analyze (in days)
@@ -27,3 +29,6 @@ alerts:
   max_history: 1000
   # Days to keep alert history
   retention_days: 90
+
+# Display timezone (CT/ET/PT/MT or IANA e.g. America/Chicago)
+timezone: CT

@@ -1,4 +1,4 @@
-# Stock Volatility Analysis Application
+# StockSpikes
 
 A real-time stock price volatility monitoring system that detects sharp price movements and unusual trading patterns across a configurable portfolio of stocks.
 
@@ -108,7 +108,7 @@ cp .env.example .env
 docker-compose up -d
 
 # Access the dashboard
-# Open http://localhost:8000 in your browser
+# Open http://localhost:5000 in your browser
 ```
 
 ### Option 2: Local Development
@@ -124,9 +124,9 @@ mysql -u root -p < schema.sql  # (create this if needed)
 redis-server
 
 # Run the app
-python -m uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+python -m uvicorn app.main:app --reload --host 0.0.0.0 --port 5000
 
-# Access at http://localhost:8000
+# Access at http://localhost:5000
 ```
 
 ## ⚙️ Configuration
@@ -155,7 +155,7 @@ Changes are picked up on the next scheduled run.
 
 ## 📊 API Endpoints
 
-All endpoints are JSON-based and accessible at `http://localhost:8000/api/`:
+All endpoints are JSON-based and accessible at `http://localhost:5000/api/`:
 
 ### `GET /api/stocks`
 List all monitored stocks with current status.
@@ -304,7 +304,7 @@ Day 3: +8% (sharp up)    } Creates PATTERN alert
 6. Update Stock.last_price
 
 ### On Browser Request
-1. User opens http://localhost:8000
+1. User opens http://localhost:5000
 2. Frontend polls `/api/stocks` and `/api/alerts` every 30 seconds
 3. API queries MySQL and returns recent data
 4. Dashboard updates with new alerts in real-time
@@ -349,18 +349,18 @@ scheduler:
 ### Manual Testing
 ```bash
 # Trigger analysis manually
-curl -X POST http://localhost:8000/api/refresh
+curl -X POST http://localhost:5000/api/refresh
 
 # Get alerts
-curl http://localhost:8000/api/alerts
+curl http://localhost:5000/api/alerts
 
 # Get stocks
-curl http://localhost:8000/api/stocks
+curl http://localhost:5000/api/stocks
 ```
 
 ### Docker Logs
 ```bash
-docker-compose logs -f app
+docker-compose logs -f stocks-dashboard
 docker-compose logs -f mysql
 docker-compose logs -f redis
 ```
@@ -424,7 +424,7 @@ MIT
 
 ## 🐛 Troubleshooting
 
-**Port 8000 already in use:**
+**Port 5000 already in use:**
 ```bash
 docker-compose down
 docker-compose up -d
@@ -439,7 +439,7 @@ docker-compose logs mysql
 **No alerts appearing:**
 - Check `config.yaml` has valid stock symbols
 - Run `POST /api/refresh` to trigger analysis
-- Check logs: `docker-compose logs app`
+- Check logs: `docker-compose logs stocks-dashboard`
 
 **Redis connection issues:**
 ```bash

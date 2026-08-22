@@ -3,42 +3,120 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Stock Volatility Monitor</title>
+    <title>StockSpikes</title>
     <link rel="stylesheet" href="/static/style.css">
+    <script>
+        // Apply theme before paint to avoid flash
+        (function () {
+            const theme = localStorage.getItem('theme') || 'light';
+            document.documentElement.setAttribute('data-theme', theme);
+        })();
+    </script>
 </head>
 <body>
     <div class="container">
         <header>
-            <h1>📈 Stock Volatility Monitor</h1>
-            <p>Real-time monitoring of stock price volatility</p>
+            <div class="header-top">
+                <div class="header-titles">
+                    <h1>StockSpikes</h1>
+                </div>
+                <div class="theme-toggle" role="group" aria-label="Color theme">
+                    <button type="button" id="themeLightBtn" class="theme-btn" data-theme="light">Light</button>
+                    <button type="button" id="themeDarkBtn" class="theme-btn" data-theme="dark">Dark</button>
+                </div>
+            </div>
         </header>
 
-        <div class="controls">
-            <button id="refreshBtn" class="btn btn-primary">🔄 Refresh Now</button>
-            <span id="lastUpdate" class="last-update">Last update: Never</span>
+        <nav class="tabs" role="tablist" aria-label="Main sections">
+            <button type="button" class="tab-btn" role="tab" id="tabStocks" data-tab="stocks" aria-controls="panelStocks">Stocks</button>
+            <button type="button" class="tab-btn tab-disabled" role="tab" id="tabOptions" data-tab="options" aria-controls="panelOptions" disabled aria-disabled="true" title="Coming soon">Options</button>
+            <button type="button" class="tab-btn" role="tab" id="tabConfiguration" data-tab="configuration" aria-controls="panelConfiguration">Configuration</button>
+        </nav>
+
+        <div id="panelStocks" class="tab-panel" role="tabpanel" aria-labelledby="tabStocks">
+            <div class="controls">
+                <button id="refreshBtn" class="btn btn-primary">🔄 Refresh Now</button>
+                <span id="lastUpdate" class="last-update">Last update: Never</span>
+            </div>
+
+            <div class="dashboard">
+                <section class="section">
+                    <h2>Monitored Stocks</h2>
+                    <div class="table-wrap">
+                        <table class="data-table" id="stocksTable">
+                            <thead>
+                                <tr>
+                                    <th>Symbol</th>
+                                    <th>Price</th>
+                                    <th>Open</th>
+                                    <th>High</th>
+                                    <th>Low</th>
+                                    <th>Prev Close</th>
+                                    <th>Change</th>
+                                    <th>Volume</th>
+                                    <th>Last Alert</th>
+                                    <th>Live</th>
+                                </tr>
+                            </thead>
+                            <tbody id="stocksTableBody">
+                                <tr><td colspan="10" class="loading">Loading stocks...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+
+                <section class="section" id="alertHistorySection">
+                    <h2 id="alertHistoryTitle">Alert History</h2>
+                    <p id="alertHistoryHint" class="section-hint">Click Alert on a stock above to load its alert history.</p>
+                    <div class="table-wrap">
+                        <table class="data-table" id="alertsTable">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Type</th>
+                                    <th>Severity</th>
+                                    <th>Change</th>
+                                    <th>From</th>
+                                    <th>To</th>
+                                </tr>
+                            </thead>
+                            <tbody id="alertsTableBody">
+                                <tr><td colspan="6" class="loading">No stock selected</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="pagination" id="alertPagination" hidden>
+                        <div class="pagination-left">
+                            <label for="alertPageSize">Per page</label>
+                            <select id="alertPageSize" aria-label="Alerts per page">
+                                <option value="10" selected>10</option>
+                                <option value="20">20</option>
+                                <option value="50">50</option>
+                            </select>
+                        </div>
+                        <div class="pagination-right">
+                            <span id="alertPageInfo" class="page-info"></span>
+                            <button type="button" id="alertPrevBtn" class="btn btn-secondary" disabled>Previous</button>
+                            <button type="button" id="alertNextBtn" class="btn btn-secondary" disabled>Next</button>
+                        </div>
+                    </div>
+                </section>
+            </div>
         </div>
 
-        <div class="dashboard">
-            <section class="section">
-                <h2>Monitored Stocks</h2>
-                <div id="stocksList" class="stocks-grid">
-                    <div class="loading">Loading stocks...</div>
-                </div>
-            </section>
+        <div id="panelOptions" class="tab-panel" role="tabpanel" aria-labelledby="tabOptions" hidden>
+            <!-- Options content coming later -->
+        </div>
 
-            <section class="section">
-                <h2>Recent Volatility Alerts</h2>
-                <div id="alertsList" class="alerts-container">
-                    <div class="loading">Loading alerts...</div>
-                </div>
-            </section>
-
-            <section class="section">
-                <h2>Configuration</h2>
-                <div id="configPanel" class="config-panel">
-                    <div class="loading">Loading configuration...</div>
-                </div>
-            </section>
+        <div id="panelConfiguration" class="tab-panel" role="tabpanel" aria-labelledby="tabConfiguration" hidden>
+            <div class="dashboard">
+                <section class="section">
+                    <h2>Configuration</h2>
+                    <div id="configPanel" class="config-panel">
+                        <div class="loading">Loading configuration...</div>
+                    </div>
+                </section>
+            </div>
         </div>
     </div>
 

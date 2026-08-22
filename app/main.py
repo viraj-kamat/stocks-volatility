@@ -25,7 +25,7 @@ scheduler = BackgroundScheduler()
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Startup
-    logger.info("Starting Stock Volatility Application")
+    logger.info("Starting StockSpikes")
     logger.info(f"Monitored symbols: {app_config.symbols}")
     logger.info(f"Volatility threshold: {app_config.volatility_threshold}%")
 
@@ -64,7 +64,7 @@ async def lifespan(app: FastAPI):
     yield
 
     # Shutdown
-    logger.info("Shutting down Stock Volatility Application")
+    logger.info("Shutting down StockSpikes")
     if scheduler.running:
         scheduler.shutdown()
         logger.info("Scheduler stopped")
@@ -80,7 +80,7 @@ def cleanup_old_alerts_wrapper():
 
 
 app = FastAPI(
-    title="Stock Volatility Analysis",
+    title="StockSpikes",
     description="Monitor stock price volatility and detect sharp movements",
     version="1.0.0",
     lifespan=lifespan,
@@ -114,4 +114,4 @@ async def shutdown_event():
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    uvicorn.run(app, host="0.0.0.0", port=5000)
