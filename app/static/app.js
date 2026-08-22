@@ -185,11 +185,13 @@ class VolatilityMonitor {
                         <td>${this.formatMoney(stock.high)}</td>
                         <td>${this.formatMoney(stock.low)}</td>
                         <td>${this.formatMoney(stock.previous_close)}</td>
-                        <td class="${changeClass}">${this.formatPct(stock.percent_change)}</td>
                         <td>${this.formatVolume(stock.volume)}</td>
                         <td class="col-status col-last-alert" data-action="load-alerts" title="${alertTitle}">
                             <span class="${alertDotClass}"></span>
                             ${alertDateHtml}
+                        </td>
+                        <td class="${changeClass}" title="Live: (price − prev close) / prev close">
+                            ${this.formatPct(stock.percent_change)}
                         </td>
                         <td class="col-status col-live">
                             <a class="nasdaq-link live-link" href="${chainUrl}" target="_blank" rel="noopener noreferrer" title="${liveTitle}">
