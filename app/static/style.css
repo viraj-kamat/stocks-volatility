@@ -363,8 +363,13 @@ header p {
 .col-live .live-link {
     display: inline-flex;
     align-items: center;
-    justify-content: center;
+    gap: 8px;
     text-decoration: none;
+}
+
+.col-live .live-change {
+    font-size: 0.9em;
+    white-space: nowrap;
 }
 
 .col-live .live-link:hover .alert-dot {
@@ -413,6 +418,16 @@ header p {
 
 .alert-dot.severity-high {
     background: var(--color-danger);
+}
+
+.col-last-alert .alert-dot.severity-medium,
+.col-last-alert .alert-dot.severity-high {
+    animation: alert-severity-blink 1.1s ease-in-out infinite;
+}
+
+@keyframes alert-severity-blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.2; }
 }
 
 .alert-dot.alert-none {

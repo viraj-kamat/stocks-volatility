@@ -140,11 +140,6 @@ class VolatilityMonitor {
         return `${sign}${n.toFixed(2)}%`;
     }
 
-    formatVolume(value) {
-        if (value === null || value === undefined) return '—';
-        return Number(value).toLocaleString();
-    }
-
     async fetchAndDisplayStocks() {
         try {
             const response = await fetch('/api/stocks');
@@ -152,7 +147,7 @@ class VolatilityMonitor {
             const body = document.getElementById('stocksTableBody');
 
             if (!stocks.length) {
-                body.innerHTML = '<tr><td colspan="10" class="loading">No stocks configured</td></tr>';
+                body.innerHTML = '<tr><td colspan="8" class="loading">No stocks configured</td></tr>';
                 return;
             }
 
@@ -185,17 +180,14 @@ class VolatilityMonitor {
                         <td>${this.formatMoney(stock.high)}</td>
                         <td>${this.formatMoney(stock.low)}</td>
                         <td>${this.formatMoney(stock.previous_close)}</td>
-                        <td>${this.formatVolume(stock.volume)}</td>
                         <td class="col-status col-last-alert" data-action="load-alerts" title="${alertTitle}">
                             <span class="${alertDotClass}"></span>
                             ${alertDateHtml}
                         </td>
-                        <td class="${changeClass}" title="Live: (price − prev close) / prev close">
-                            ${this.formatPct(stock.percent_change)}
-                        </td>
                         <td class="col-status col-live">
                             <a class="nasdaq-link live-link" href="${chainUrl}" target="_blank" rel="noopener noreferrer" title="${liveTitle}">
                                 <span class="${liveDotClass}"></span>
+                                <span class="live-change ${changeClass}">${this.formatPct(stock.percent_change)}</span>
                             </a>
                         </td>
                     </tr>
@@ -204,7 +196,7 @@ class VolatilityMonitor {
         } catch (error) {
             console.error('Error fetching stocks:', error);
             document.getElementById('stocksTableBody').innerHTML =
-                `<tr><td colspan="10" class="error">Error loading stocks: ${error.message}</td></tr>`;
+                `<tr><td colspan="8" class="error">Error loading stocks: ${error.message}</td></tr>`;
         }
     }
 
