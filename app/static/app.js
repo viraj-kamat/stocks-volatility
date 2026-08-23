@@ -243,7 +243,7 @@ class VolatilityMonitor {
 
         title.textContent = `Alert History — ${symbol}`;
         hint.textContent = 'Historical alerts from scheduled volatility analysis.';
-        body.innerHTML = '<tr><td colspan="6" class="loading">Loading alerts...</td></tr>';
+        body.innerHTML = '<tr><td colspan="4" class="loading">Loading alerts...</td></tr>';
 
         const skip = (this.alertPage - 1) * this.alertPageSize;
 
@@ -265,26 +265,27 @@ class VolatilityMonitor {
             }
 
             if (!alerts.length) {
-                body.innerHTML = '<tr><td colspan="6" class="loading">No alerts for this stock yet</td></tr>';
+                body.innerHTML = '<tr><td colspan="4" class="loading">No alerts for this stock yet</td></tr>';
                 this.updatePaginationControls();
                 return;
             }
 
-            body.innerHTML = alerts.map(alert => `
+            body.innerHTML = alerts.map(alert => {
+                const severity = alert.severity || 'low';
+                return `
                 <tr>
                     <td>${alert.triggered_at_display || alert.triggered_at}</td>
-                    <td><span class="type-pill type-${(alert.alert_type || '').replace(/_/g, '-')}">${this.formatAlertType(alert.alert_type)}</span></td>
-                    <td><span class="severity-pill severity-${alert.severity}">${alert.severity}</span></td>
-                    <td class="col-num num ${(alert.percent_change || 0) >= 0 ? 'change-up' : 'change-down'}">${this.formatPct(alert.percent_change)}</td>
+                    <td class="col-num num change-severity-${severity}" title="Severity: ${severity}">${this.formatPct(alert.percent_change)}</td>
                     <td class="col-num num">${this.formatMoney(this.priceFrom(alert))}</td>
                     <td class="col-num num">${this.formatMoney(alert.price_at_trigger)}</td>
                 </tr>
-            `).join('');
+            `;
+            }).join('');
 
             this.updatePaginationControls();
         } catch (error) {
             console.error('Error fetching alerts:', error);
-            body.innerHTML = `<tr><td colspan="6" class="error">Error loading alerts: ${error.message}</td></tr>`;
+            body.innerHTML = `<tr><td colspan="4" class="error">Error loading alerts: ${error.message}</td></tr>`;
             document.getElementById('alertPagination').hidden = true;
         }
     }
@@ -378,14 +379,6 @@ class VolatilityMonitor {
         document.getElementById('lastUpdate').textContent = `Last update: ${now.toLocaleTimeString()}`;
     }
 
-    formatAlertType(type) {
-        const types = {
-            'sharp_up': 'Sharp Up',
-            'sharp_down': 'Sharp Down',
-            'pattern': 'Pattern',
-        };
-        return types[type] || type;
-    }
 }
 
 // Initialize when DOM is ready

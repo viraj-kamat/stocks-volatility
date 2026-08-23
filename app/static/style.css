@@ -626,6 +626,21 @@ body {
     font-weight: 600;
 }
 
+.change-severity-high {
+    color: var(--color-danger);
+    font-weight: 600;
+}
+
+.change-severity-medium {
+    color: var(--color-warning);
+    font-weight: 600;
+}
+
+.change-severity-low {
+    color: var(--color-info);
+    font-weight: 600;
+}
+
 /* ── Pills & badges ── */
 
 .severity-pill {
