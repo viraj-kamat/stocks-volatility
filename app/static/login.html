@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sign in — StockSpikes</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/style.css">
+    <script>
+        (function () {
+            const theme = localStorage.getItem('theme') || 'light';
+            document.documentElement.setAttribute('data-theme', theme);
+        })();
+    </script>
+</head>
+<body class="login-page">
+    <div class="login-shell">
+        <div class="login-card">
+            <div class="login-brand">
+                <div class="brand-mark" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M4 18L9 10L13 14L20 6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+                        <path d="M16 6H20V10" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                </div>
+                <h1>StockSpikes</h1>
+                <p>Enter the password to open the dashboard.</p>
+            </div>
+
+            <form id="loginForm" class="login-form" autocomplete="current-password">
+                <label for="password">Password</label>
+                <input
+                    type="password"
+                    id="password"
+                    name="password"
+                    required
+                    autofocus
+                    placeholder="Password"
+                    autocomplete="current-password"
+                >
+                <p id="loginError" class="login-error" hidden></p>
+                <button type="submit" id="loginBtn" class="btn btn-primary login-submit">
+                    Sign in
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        (async function () {
+            try {
+                const res = await fetch('/api/auth/status', { credentials: 'same-origin' });
+                const data = await res.json();
+                if (!data.auth_required || data.authenticated) {
+                    window.location.replace('/');
+                    return;
+                }
+            } catch (_) {
+                /* stay on login */
+            }
+
+            const form = document.getElementById('loginForm');
+            const errorEl = document.getElementById('loginError');
+            const btn = document.getElementById('loginBtn');
+
+            form.addEventListener('submit', async (event) => {
+                event.preventDefault();
+                errorEl.hidden = true;
+                btn.disabled = true;
+                btn.textContent = 'Signing in…';
+
+                try {
+                    const res = await fetch('/api/auth/login', {
+                        method: 'POST',
+                        credentials: 'same-origin',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            password: document.getElementById('password').value,
+                        }),
+                    });
+
+                    if (!res.ok) {
+                        const payload = await res.json().catch(() => ({}));
+                        throw new Error(payload.detail || 'Invalid password');
+                    }
+
+                    window.location.replace('/');
+                } catch (err) {
+                    errorEl.textContent = err.message || 'Sign-in failed';
+                    errorEl.hidden = false;
+                    btn.disabled = false;
+                    btn.textContent = 'Sign in';
+                }
+            });
+        })();
+    </script>
+</body>
+</html>

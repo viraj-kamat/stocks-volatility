@@ -6,10 +6,12 @@ from contextlib import asynccontextmanager
 import os
 
 from app.routes import api
+from app.routes import auth as auth_routes
 from app.routes.static import serve_static
 from app.config import app_config, settings
 from app.scheduler.jobs import run_analysis_job, cleanup_old_alerts
 from app.database.connection import SessionLocal
+from app.auth import AuthMiddleware, auth_enabled
 
 # Configure logging
 logging.basicConfig(
@@ -28,6 +30,10 @@ async def lifespan(app: FastAPI):
     logger.info("Starting StockSpikes")
     logger.info(f"Monitored symbols: {app_config.symbols}")
     logger.info(f"Volatility threshold: {app_config.volatility_threshold}%")
+    if auth_enabled():
+        logger.info("Password authentication enabled (STOCKSPIKES_PWD)")
+    else:
+        logger.warning("STOCKSPIKES_PWD is not set — dashboard auth is disabled")
 
     # Start scheduler
     if not scheduler.running:
@@ -95,7 +101,11 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Password gate (cookie session). Added last so it runs first.
+app.add_middleware(AuthMiddleware)
+
 # Include routes
+app.include_router(auth_routes.router)
 app.include_router(api.router)
 
 # Serve static files

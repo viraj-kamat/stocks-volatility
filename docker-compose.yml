@@ -40,6 +40,7 @@ services:
       MYSQL_DATABASE: ${MYSQL_DATABASE:-stocks_db}
       REDIS_HOST: redis
       REDIS_PORT: 6379
+      STOCKSPIKES_PWD: ${STOCKSPIKES_PWD:?Set STOCKSPIKES_PWD in your .env file}
     ports:
       - "5000:5000"
     depends_on:

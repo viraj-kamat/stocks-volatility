@@ -18,6 +18,9 @@ class Settings(BaseSettings):
     debug: bool = os.getenv("DEBUG", "False").lower() == "true"
     log_level: str = os.getenv("LOG_LEVEL", "INFO")
 
+    # Dashboard password (from STOCKSPIKES_PWD). Empty disables auth.
+    stockspikes_pwd: str = os.getenv("STOCKSPIKES_PWD", "")
+
     class Config:
         env_file = ".env"
 
