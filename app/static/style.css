@@ -420,8 +420,8 @@ header p {
     background: var(--color-danger);
 }
 
-.col-last-alert .alert-dot.severity-medium,
-.col-last-alert .alert-dot.severity-high {
+.col-live .alert-dot.severity-medium,
+.col-live .alert-dot.severity-high {
     animation: alert-severity-blink 1.1s ease-in-out infinite;
 }
 
