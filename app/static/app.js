@@ -274,10 +274,10 @@ class VolatilityMonitor {
                 const severity = alert.severity || 'low';
                 return `
                 <tr>
-                    <td>${alert.triggered_at_display || alert.triggered_at}</td>
-                    <td class="col-num num change-severity-${severity}" title="Severity: ${severity}">${this.formatPct(alert.percent_change)}</td>
-                    <td class="col-num num">${this.formatMoney(this.priceFrom(alert))}</td>
-                    <td class="col-num num">${this.formatMoney(alert.price_at_trigger)}</td>
+                    <td class="col-date">${alert.triggered_at_display || alert.triggered_at}</td>
+                    <td class="col-num col-change num change-severity-${severity}" title="Severity: ${severity}">${this.formatPct(alert.percent_change)}</td>
+                    <td class="col-num col-from num">${this.formatMoney(this.priceFrom(alert))}</td>
+                    <td class="col-num col-to num">${this.formatMoney(alert.price_at_trigger)}</td>
                 </tr>
             `;
             }).join('');
