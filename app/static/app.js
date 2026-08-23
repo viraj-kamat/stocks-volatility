@@ -175,11 +175,11 @@ class VolatilityMonitor {
                         <td class="col-symbol">
                             <a class="nasdaq-link symbol-link" href="${stockUrl}" target="_blank" rel="noopener noreferrer">${stock.symbol}</a>
                         </td>
-                        <td>${this.formatMoney(stock.current_price)}</td>
-                        <td>${this.formatMoney(stock.open)}</td>
-                        <td>${this.formatMoney(stock.high)}</td>
-                        <td>${this.formatMoney(stock.low)}</td>
-                        <td>${this.formatMoney(stock.previous_close)}</td>
+                        <td class="col-num num">${this.formatMoney(stock.current_price)}</td>
+                        <td class="col-num num">${this.formatMoney(stock.open)}</td>
+                        <td class="col-num num">${this.formatMoney(stock.high)}</td>
+                        <td class="col-num num">${this.formatMoney(stock.low)}</td>
+                        <td class="col-num num">${this.formatMoney(stock.previous_close)}</td>
                         <td class="col-status col-last-alert" data-action="load-alerts" title="${alertTitle}">
                             <span class="${alertDotClass}"></span>
                             ${alertDateHtml}
@@ -242,7 +242,7 @@ class VolatilityMonitor {
         const body = document.getElementById('alertsTableBody');
 
         title.textContent = `Alert History — ${symbol}`;
-        hint.textContent = 'From scheduled volatility analysis.';
+        hint.textContent = 'Historical alerts from scheduled volatility analysis.';
         body.innerHTML = '<tr><td colspan="6" class="loading">Loading alerts...</td></tr>';
 
         const skip = (this.alertPage - 1) * this.alertPageSize;
@@ -273,11 +273,11 @@ class VolatilityMonitor {
             body.innerHTML = alerts.map(alert => `
                 <tr>
                     <td>${alert.triggered_at_display || alert.triggered_at}</td>
-                    <td>${this.formatAlertType(alert.alert_type)}</td>
+                    <td><span class="type-pill type-${(alert.alert_type || '').replace(/_/g, '-')}">${this.formatAlertType(alert.alert_type)}</span></td>
                     <td><span class="severity-pill severity-${alert.severity}">${alert.severity}</span></td>
-                    <td class="${(alert.percent_change || 0) >= 0 ? 'change-up' : 'change-down'}">${this.formatPct(alert.percent_change)}</td>
-                    <td>${this.formatMoney(this.priceFrom(alert))}</td>
-                    <td>${this.formatMoney(alert.price_at_trigger)}</td>
+                    <td class="col-num num ${(alert.percent_change || 0) >= 0 ? 'change-up' : 'change-down'}">${this.formatPct(alert.percent_change)}</td>
+                    <td class="col-num num">${this.formatMoney(this.priceFrom(alert))}</td>
+                    <td class="col-num num">${this.formatMoney(alert.price_at_trigger)}</td>
                 </tr>
             `).join('');
 
@@ -323,38 +323,51 @@ class VolatilityMonitor {
         }
     }
 
+    setRefreshButtonState(state) {
+        const btn = document.getElementById('refreshBtn');
+        const label = btn.querySelector('.btn-label');
+        btn.disabled = state === 'loading';
+        btn.classList.toggle('is-loading', state === 'loading');
+
+        const labels = {
+            idle: 'Refresh data',
+            loading: 'Refreshing…',
+            success: 'Refreshed',
+            error: 'Refresh failed',
+        };
+        if (label) {
+            label.textContent = labels[state] || labels.idle;
+        }
+    }
+
     async manualRefresh() {
         if (this.isRefreshing) return;
 
-        const btn = document.getElementById('refreshBtn');
         this.isRefreshing = true;
-        btn.disabled = true;
-        btn.textContent = '⏳ Refreshing...';
+        this.setRefreshButtonState('loading');
 
         try {
             const response = await fetch('/api/refresh', { method: 'POST' });
             const result = await response.json();
 
             if (result.status === 'success') {
-                btn.textContent = '✅ Refreshed!';
+                this.setRefreshButtonState('success');
                 setTimeout(async () => {
-                    btn.textContent = '🔄 Refresh Now';
-                    btn.disabled = false;
+                    this.setRefreshButtonState('idle');
                     this.isRefreshing = false;
                     await this.updateData();
                     if (this.selectedSymbol) {
                         await this.loadAlertHistory(this.selectedSymbol);
                     }
-                }, 2000);
+                }, 1500);
             } else {
                 throw new Error(result.error || 'Refresh failed');
             }
         } catch (error) {
             console.error('Error refreshing:', error);
-            btn.textContent = '❌ Error';
+            this.setRefreshButtonState('error');
             setTimeout(() => {
-                btn.textContent = '🔄 Refresh Now';
-                btn.disabled = false;
+                this.setRefreshButtonState('idle');
                 this.isRefreshing = false;
             }, 2000);
         }

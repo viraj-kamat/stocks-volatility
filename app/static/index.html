@@ -3,10 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>StockSpikes</title>
+    <title>StockSpikes — Volatility Monitor</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/static/style.css">
     <script>
-        // Apply theme before paint to avoid flash
         (function () {
             const theme = localStorage.getItem('theme') || 'light';
             document.documentElement.setAttribute('data-theme', theme);
@@ -14,108 +16,153 @@
     </script>
 </head>
 <body>
-    <div class="container">
-        <header>
-            <div class="header-top">
-                <div class="header-titles">
-                    <h1>StockSpikes</h1>
+    <div class="app-shell">
+        <header class="site-header">
+            <div class="header-inner">
+                <div class="brand">
+                    <div class="brand-mark" aria-hidden="true">
+                        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M4 18L9 10L13 14L20 6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+                            <path d="M16 6H20V10" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                    </div>
+                    <div class="brand-text">
+                        <h1>StockSpikes</h1>
+                        <p class="brand-tagline">Volatility monitoring &amp; alert history</p>
+                    </div>
                 </div>
-                <div class="theme-toggle" role="group" aria-label="Color theme">
-                    <button type="button" id="themeLightBtn" class="theme-btn" data-theme="light">Light</button>
-                    <button type="button" id="themeDarkBtn" class="theme-btn" data-theme="dark">Dark</button>
+                <div class="header-actions">
+                    <div class="theme-toggle" role="group" aria-label="Color theme">
+                        <button type="button" id="themeLightBtn" class="theme-btn" data-theme="light">Light</button>
+                        <button type="button" id="themeDarkBtn" class="theme-btn" data-theme="dark">Dark</button>
+                    </div>
                 </div>
             </div>
         </header>
 
-        <nav class="tabs" role="tablist" aria-label="Main sections">
-            <button type="button" class="tab-btn" role="tab" id="tabStocks" data-tab="stocks" aria-controls="panelStocks">Stocks</button>
-            <button type="button" class="tab-btn tab-disabled" role="tab" id="tabOptions" data-tab="options" aria-controls="panelOptions" disabled aria-disabled="true" title="Coming soon">Options</button>
-            <button type="button" class="tab-btn" role="tab" id="tabConfiguration" data-tab="configuration" aria-controls="panelConfiguration">Configuration</button>
-        </nav>
+        <main class="main-content">
+            <nav class="tabs" role="tablist" aria-label="Main sections">
+                <button type="button" class="tab-btn" role="tab" id="tabStocks" data-tab="stocks" aria-controls="panelStocks">Stocks</button>
+                <button type="button" class="tab-btn tab-disabled" role="tab" id="tabOptions" data-tab="options" aria-controls="panelOptions" disabled aria-disabled="true" title="Coming soon">Options</button>
+                <button type="button" class="tab-btn" role="tab" id="tabConfiguration" data-tab="configuration" aria-controls="panelConfiguration">Configuration</button>
+            </nav>
 
-        <div id="panelStocks" class="tab-panel" role="tabpanel" aria-labelledby="tabStocks">
-            <div class="controls">
-                <button id="refreshBtn" class="btn btn-primary">🔄 Refresh Now</button>
-                <span id="lastUpdate" class="last-update">Last update: Never</span>
-            </div>
-
-            <div class="dashboard">
-                <section class="section">
-                    <h2>Monitored Stocks</h2>
-                    <div class="table-wrap">
-                        <table class="data-table" id="stocksTable">
-                            <thead>
-                                <tr>
-                                    <th>Symbol</th>
-                                    <th>Price</th>
-                                    <th>Open</th>
-                                    <th>High</th>
-                                    <th>Low</th>
-                                    <th>Prev Close</th>
-                                    <th>Last Alert</th>
-                                    <th>Live</th>
-                                </tr>
-                            </thead>
-                            <tbody id="stocksTableBody">
-                                <tr><td colspan="8" class="loading">Loading stocks...</td></tr>
-                            </tbody>
-                        </table>
+            <div id="panelStocks" class="tab-panel" role="tabpanel" aria-labelledby="tabStocks">
+                <div class="toolbar">
+                    <div class="toolbar-left">
+                        <button id="refreshBtn" type="button" class="btn btn-primary">
+                            <svg class="btn-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                                <path d="M21 12a9 9 0 1 1-2.64-6.36" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                                <path d="M21 3v6h-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                            <span class="btn-label">Refresh data</span>
+                        </button>
+                        <span id="lastUpdate" class="last-update">Last update: Never</span>
                     </div>
-                </section>
-
-                <section class="section" id="alertHistorySection">
-                    <h2 id="alertHistoryTitle">Alert History</h2>
-                    <p id="alertHistoryHint" class="section-hint">Click Alert on a stock above to load its alert history.</p>
-                    <div class="table-wrap">
-                        <table class="data-table" id="alertsTable">
-                            <thead>
-                                <tr>
-                                    <th>Date</th>
-                                    <th>Type</th>
-                                    <th>Severity</th>
-                                    <th>Change</th>
-                                    <th>From</th>
-                                    <th>To</th>
-                                </tr>
-                            </thead>
-                            <tbody id="alertsTableBody">
-                                <tr><td colspan="6" class="loading">No stock selected</td></tr>
-                            </tbody>
-                        </table>
+                    <div class="toolbar-right">
+                        <span class="live-badge" title="Quotes refresh every 30 seconds">
+                            <span class="live-badge-dot"></span>
+                            Auto-refresh 30s
+                        </span>
                     </div>
-                    <div class="pagination" id="alertPagination" hidden>
-                        <div class="pagination-left">
-                            <label for="alertPageSize">Per page</label>
-                            <select id="alertPageSize" aria-label="Alerts per page">
-                                <option value="10" selected>10</option>
-                                <option value="20">20</option>
-                                <option value="50">50</option>
-                            </select>
+                </div>
+
+                <div class="dashboard">
+                    <section class="card section">
+                        <div class="section-header">
+                            <div>
+                                <h2>Monitored Stocks</h2>
+                                <p class="section-desc">Live quotes and latest stored alerts for your watchlist.</p>
+                            </div>
                         </div>
-                        <div class="pagination-right">
-                            <span id="alertPageInfo" class="page-info"></span>
-                            <button type="button" id="alertPrevBtn" class="btn btn-secondary" disabled>Previous</button>
-                            <button type="button" id="alertNextBtn" class="btn btn-secondary" disabled>Next</button>
+                        <div class="table-wrap">
+                            <table class="data-table" id="stocksTable">
+                                <thead>
+                                    <tr>
+                                        <th>Symbol</th>
+                                        <th class="col-num">Price</th>
+                                        <th class="col-num">Open</th>
+                                        <th class="col-num">High</th>
+                                        <th class="col-num">Low</th>
+                                        <th class="col-num">Prev Close</th>
+                                        <th>Last Alert</th>
+                                        <th>Live</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="stocksTableBody">
+                                    <tr><td colspan="8" class="loading">Loading stocks…</td></tr>
+                                </tbody>
+                            </table>
                         </div>
-                    </div>
-                </section>
-            </div>
-        </div>
+                    </section>
 
-        <div id="panelOptions" class="tab-panel" role="tabpanel" aria-labelledby="tabOptions" hidden>
-            <!-- Options content coming later -->
-        </div>
-
-        <div id="panelConfiguration" class="tab-panel" role="tabpanel" aria-labelledby="tabConfiguration" hidden>
-            <div class="dashboard">
-                <section class="section">
-                    <h2>Configuration</h2>
-                    <div id="configPanel" class="config-panel">
-                        <div class="loading">Loading configuration...</div>
-                    </div>
-                </section>
+                    <section class="card section" id="alertHistorySection">
+                        <div class="section-header">
+                            <div>
+                                <h2 id="alertHistoryTitle">Alert History</h2>
+                                <p id="alertHistoryHint" class="section-desc">Select a stock’s Last Alert cell to view its full alert history.</p>
+                            </div>
+                        </div>
+                        <div class="table-wrap">
+                            <table class="data-table" id="alertsTable">
+                                <thead>
+                                    <tr>
+                                        <th>Date</th>
+                                        <th>Type</th>
+                                        <th>Severity</th>
+                                        <th class="col-num">Change</th>
+                                        <th class="col-num">From</th>
+                                        <th class="col-num">To</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="alertsTableBody">
+                                    <tr><td colspan="6" class="loading">No stock selected</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="pagination" id="alertPagination" hidden>
+                            <div class="pagination-left">
+                                <label for="alertPageSize">Per page</label>
+                                <select id="alertPageSize" aria-label="Alerts per page">
+                                    <option value="10" selected>10</option>
+                                    <option value="20">20</option>
+                                    <option value="50">50</option>
+                                </select>
+                            </div>
+                            <div class="pagination-right">
+                                <span id="alertPageInfo" class="page-info"></span>
+                                <button type="button" id="alertPrevBtn" class="btn btn-secondary" disabled>Previous</button>
+                                <button type="button" id="alertNextBtn" class="btn btn-secondary" disabled>Next</button>
+                            </div>
+                        </div>
+                    </section>
+                </div>
             </div>
-        </div>
+
+            <div id="panelOptions" class="tab-panel" role="tabpanel" aria-labelledby="tabOptions" hidden>
+                <!-- Options content coming later -->
+            </div>
+
+            <div id="panelConfiguration" class="tab-panel" role="tabpanel" aria-labelledby="tabConfiguration" hidden>
+                <div class="dashboard">
+                    <section class="card section">
+                        <div class="section-header">
+                            <div>
+                                <h2>Configuration</h2>
+                                <p class="section-desc">Current watchlist and analysis settings from config.yaml.</p>
+                            </div>
+                        </div>
+                        <div id="configPanel" class="config-panel">
+                            <div class="loading">Loading configuration…</div>
+                        </div>
+                    </section>
+                </div>
+            </div>
+        </main>
+
+        <footer class="site-footer">
+            <p>StockSpikes · Data via Yahoo Finance · Not investment advice</p>
+        </footer>
     </div>
 
     <script src="/static/app.js"></script>
