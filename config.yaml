@@ -1,9 +1,23 @@
 # StockSpikes Configuration
 
-# Stock symbols to monitor
+# Stock symbols to monitor (volatile / under ~$50 focus)
 symbols:
   - RIVN
   - BNED
+  - MARA
+  - RIOT
+  - CLSK
+  - LCID
+  - NIO
+  - AMC
+  - PLUG
+  - OPEN
+  - RGTI
+  - IONQ
+  - SOFI
+  - UPST
+  - JOBY
+  - SMCI
 
 # Volatility detection settings
 volatility:
