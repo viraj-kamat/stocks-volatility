@@ -5,6 +5,9 @@ class VolatilityMonitor {
         this.activeTab = localStorage.getItem('activeTab') || 'stocks';
         this.theme = localStorage.getItem('theme') || 'dark';
         this.selectedSymbol = localStorage.getItem('selectedSymbol') || null;
+        this.stocks = [];
+        this.stocksPage = 1;
+        this.stocksPageSize = Number(localStorage.getItem('stocksPageSize')) || 5;
         this.alertPage = 1;
         this.alertPageSize = Number(localStorage.getItem('alertPageSize')) || 10;
         this.alertTotal = 0;
@@ -18,7 +21,8 @@ class VolatilityMonitor {
     async init() {
         this.applyTheme(this.theme);
         this.activateTab(this.activeTab);
-        this.syncPageSizeSelect();
+        this.syncStocksPageSizeSelect();
+        this.syncAlertPageSizeSelect();
         this.setupEventListeners();
         this.setupLogsPanel();
         await this.updateData();
@@ -28,7 +32,15 @@ class VolatilityMonitor {
         this.startPolling();
     }
 
-    syncPageSizeSelect() {
+    syncStocksPageSizeSelect() {
+        const select = document.getElementById('stocksPageSize');
+        if (![5, 10, 20, 50].includes(this.stocksPageSize)) {
+            this.stocksPageSize = 5;
+        }
+        select.value = String(this.stocksPageSize);
+    }
+
+    syncAlertPageSizeSelect() {
         const select = document.getElementById('alertPageSize');
         if (![10, 20, 50].includes(this.alertPageSize)) {
             this.alertPageSize = 10;
@@ -56,6 +68,26 @@ class VolatilityMonitor {
             const row = loadCell.closest('tr[data-symbol]');
             if (!row) return;
             this.selectStock(row.dataset.symbol);
+        });
+
+        document.getElementById('stocksPageSize').addEventListener('change', (event) => {
+            this.stocksPageSize = Number(event.target.value) || 5;
+            localStorage.setItem('stocksPageSize', String(this.stocksPageSize));
+            this.stocksPage = 1;
+            this.renderStocksPage();
+        });
+
+        document.getElementById('stocksPrevBtn').addEventListener('click', () => {
+            if (this.stocksPage <= 1) return;
+            this.stocksPage -= 1;
+            this.renderStocksPage();
+        });
+
+        document.getElementById('stocksNextBtn').addEventListener('click', () => {
+            const totalPages = Math.max(1, Math.ceil(this.stocks.length / this.stocksPageSize));
+            if (this.stocksPage >= totalPages) return;
+            this.stocksPage += 1;
+            this.renderStocksPage();
         });
 
         document.getElementById('alertPageSize').addEventListener('change', (event) => {
@@ -278,64 +310,121 @@ class VolatilityMonitor {
         return `${sign}${n.toFixed(2)}%`;
     }
 
+    /** Rank live severity for sort: high=3, medium=2, low=1, missing=0. */
+    liveSeverityRank(stock) {
+        const label = stock.live_label;
+        if (label === 'high') return 3;
+        if (label === 'medium') return 2;
+        if (label === 'low') return 1;
+        return 0;
+    }
+
+    sortStocksByLiveSeverity(stocks) {
+        return [...stocks].sort((a, b) => {
+            const rankDiff = this.liveSeverityRank(b) - this.liveSeverityRank(a);
+            if (rankDiff !== 0) return rankDiff;
+            const absA = Math.abs(Number(a.percent_change) || 0);
+            const absB = Math.abs(Number(b.percent_change) || 0);
+            if (absB !== absA) return absB - absA;
+            return String(a.symbol || '').localeCompare(String(b.symbol || ''));
+        });
+    }
+
     async fetchAndDisplayStocks() {
         try {
             const response = await fetch('/api/stocks');
             const stocks = await response.json();
-            const body = document.getElementById('stocksTableBody');
-
-            if (!stocks.length) {
-                body.innerHTML = '<tr><td colspan="8" class="loading">No stocks configured</td></tr>';
-                return;
-            }
-
-            body.innerHTML = stocks.map(stock => {
-                const selected = stock.symbol === this.selectedSymbol ? 'selected' : '';
-                const changeClass = (stock.percent_change || 0) >= 0 ? 'change-up' : 'change-down';
-                const alertTitle = stock.alert_severity
-                    ? `Latest alert: ${stock.alert_severity}${stock.alert_date ? ` — ${stock.alert_date}` : ''}`
-                    : 'No stored alerts';
-                const liveTitle = `Live move: ${stock.live_label || 'n/a'} (${this.formatPct(stock.percent_change)})`;
-                const alertDotClass = stock.alert_severity
-                    ? `alert-dot severity-${stock.alert_severity}`
-                    : 'alert-dot alert-none';
-                const liveDotClass = stock.live_label && stock.live_label !== 'n/a'
-                    ? `alert-dot severity-${stock.live_label}`
-                    : `alert-dot alert-${stock.live || 'none'}`;
-                const alertDateHtml = stock.alert_date
-                    ? `<span class="last-alert-date">${stock.alert_date}</span>`
-                    : `<span class="last-alert-date muted">—</span>`;
-                const sym = stock.symbol.toLowerCase();
-                const stockUrl = `https://www.nasdaq.com/market-activity/stocks/${sym}`;
-                const chainUrl = `https://www.nasdaq.com/market-activity/stocks/${sym}/option-chain`;
-                return `
-                    <tr class="stock-row ${selected}" data-symbol="${stock.symbol}">
-                        <td class="col-symbol">
-                            <a class="nasdaq-link symbol-link" href="${stockUrl}" target="_blank" rel="noopener noreferrer">${stock.symbol}</a>
-                        </td>
-                        <td class="col-num num">${this.formatMoney(stock.current_price)}</td>
-                        <td class="col-num num">${this.formatMoney(stock.open)}</td>
-                        <td class="col-num num">${this.formatMoney(stock.high)}</td>
-                        <td class="col-num num">${this.formatMoney(stock.low)}</td>
-                        <td class="col-num num">${this.formatMoney(stock.previous_close)}</td>
-                        <td class="col-status col-last-alert" data-action="load-alerts" title="${alertTitle}">
-                            <span class="${alertDotClass}"></span>
-                            ${alertDateHtml}
-                        </td>
-                        <td class="col-status col-live">
-                            <a class="nasdaq-link live-link" href="${chainUrl}" target="_blank" rel="noopener noreferrer" title="${liveTitle}">
-                                <span class="${liveDotClass}"></span>
-                                <span class="live-change ${changeClass}">${this.formatPct(stock.percent_change)}</span>
-                            </a>
-                        </td>
-                    </tr>
-                `;
-            }).join('');
+            this.stocks = this.sortStocksByLiveSeverity(Array.isArray(stocks) ? stocks : []);
+            this.renderStocksPage();
         } catch (error) {
             console.error('Error fetching stocks:', error);
+            this.stocks = [];
+            document.getElementById('stocksPagination').hidden = true;
             document.getElementById('stocksTableBody').innerHTML =
                 `<tr><td colspan="8" class="error">Error loading stocks: ${error.message}</td></tr>`;
         }
+    }
+
+    updateStocksPaginationControls() {
+        const pagination = document.getElementById('stocksPagination');
+        const info = document.getElementById('stocksPageInfo');
+        const prevBtn = document.getElementById('stocksPrevBtn');
+        const nextBtn = document.getElementById('stocksNextBtn');
+        const total = this.stocks.length;
+
+        if (!total) {
+            pagination.hidden = true;
+            return;
+        }
+
+        pagination.hidden = false;
+        const totalPages = Math.max(1, Math.ceil(total / this.stocksPageSize));
+        if (this.stocksPage > totalPages) {
+            this.stocksPage = totalPages;
+        }
+        const start = (this.stocksPage - 1) * this.stocksPageSize + 1;
+        const end = Math.min(this.stocksPage * this.stocksPageSize, total);
+
+        info.textContent = `${start}–${end} of ${total}`;
+        prevBtn.disabled = this.stocksPage <= 1;
+        nextBtn.disabled = this.stocksPage >= totalPages;
+    }
+
+    renderStocksPage() {
+        const body = document.getElementById('stocksTableBody');
+
+        if (!this.stocks.length) {
+            body.innerHTML = '<tr><td colspan="8" class="loading">No stocks configured</td></tr>';
+            this.updateStocksPaginationControls();
+            return;
+        }
+
+        this.updateStocksPaginationControls();
+        const start = (this.stocksPage - 1) * this.stocksPageSize;
+        const pageStocks = this.stocks.slice(start, start + this.stocksPageSize);
+
+        body.innerHTML = pageStocks.map(stock => {
+            const selected = stock.symbol === this.selectedSymbol ? 'selected' : '';
+            const changeClass = (stock.percent_change || 0) >= 0 ? 'change-up' : 'change-down';
+            const alertTitle = stock.alert_severity
+                ? `Latest alert: ${stock.alert_severity}${stock.alert_date ? ` — ${stock.alert_date}` : ''}`
+                : 'No stored alerts';
+            const liveTitle = `Live move: ${stock.live_label || 'n/a'} (${this.formatPct(stock.percent_change)})`;
+            const alertDotClass = stock.alert_severity
+                ? `alert-dot severity-${stock.alert_severity}`
+                : 'alert-dot alert-none';
+            const liveDotClass = stock.live_label && stock.live_label !== 'n/a'
+                ? `alert-dot severity-${stock.live_label}`
+                : `alert-dot alert-${stock.live || 'none'}`;
+            const alertDateHtml = stock.alert_date
+                ? `<span class="last-alert-date">${stock.alert_date}</span>`
+                : `<span class="last-alert-date muted">—</span>`;
+            const sym = stock.symbol.toLowerCase();
+            const stockUrl = `https://www.nasdaq.com/market-activity/stocks/${sym}`;
+            const chainUrl = `https://www.nasdaq.com/market-activity/stocks/${sym}/option-chain`;
+            return `
+                <tr class="stock-row ${selected}" data-symbol="${stock.symbol}">
+                    <td class="col-symbol">
+                        <a class="nasdaq-link symbol-link" href="${stockUrl}" target="_blank" rel="noopener noreferrer">${stock.symbol}</a>
+                    </td>
+                    <td class="col-num num">${this.formatMoney(stock.current_price)}</td>
+                    <td class="col-num num">${this.formatMoney(stock.open)}</td>
+                    <td class="col-num num">${this.formatMoney(stock.high)}</td>
+                    <td class="col-num num">${this.formatMoney(stock.low)}</td>
+                    <td class="col-num num">${this.formatMoney(stock.previous_close)}</td>
+                    <td class="col-status col-last-alert" data-action="load-alerts" title="${alertTitle}">
+                        <span class="${alertDotClass}"></span>
+                        ${alertDateHtml}
+                    </td>
+                    <td class="col-status col-live">
+                        <a class="nasdaq-link live-link" href="${chainUrl}" target="_blank" rel="noopener noreferrer" title="${liveTitle}">
+                            <span class="${liveDotClass}"></span>
+                            <span class="live-change ${changeClass}">${this.formatPct(stock.percent_change)}</span>
+                        </a>
+                    </td>
+                </tr>
+            `;
+        }).join('');
     }
 
     async selectStock(symbol) {

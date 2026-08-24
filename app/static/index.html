@@ -73,7 +73,7 @@
                             <span class="section-index" aria-hidden="true">01</span>
                             <div>
                                 <h2>Monitored Stocks</h2>
-                                <p class="section-desc">Live quotes and latest stored alerts for your watchlist.</p>
+                                <p class="section-desc">Live quotes sorted by Live severity (highest first). Updates on refresh and every 30s.</p>
                             </div>
                         </div>
                         <div class="table-wrap">
@@ -94,6 +94,22 @@
                                     <tr><td colspan="8" class="loading">Loading stocks…</td></tr>
                                 </tbody>
                             </table>
+                        </div>
+                        <div class="pagination" id="stocksPagination" hidden>
+                            <div class="pagination-left">
+                                <label for="stocksPageSize">Per page</label>
+                                <select id="stocksPageSize" aria-label="Stocks per page">
+                                    <option value="5" selected>5</option>
+                                    <option value="10">10</option>
+                                    <option value="20">20</option>
+                                    <option value="50">50</option>
+                                </select>
+                            </div>
+                            <div class="pagination-right">
+                                <span id="stocksPageInfo" class="page-info"></span>
+                                <button type="button" id="stocksPrevBtn" class="btn btn-secondary" disabled>Previous</button>
+                                <button type="button" id="stocksNextBtn" class="btn btn-secondary" disabled>Next</button>
+                            </div>
                         </div>
                     </section>
 
