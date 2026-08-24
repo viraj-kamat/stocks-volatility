@@ -37,6 +37,7 @@ settings = Settings()
 class AppConfig:
     def __init__(self, config_path: str = "config.yaml"):
         self.config_path = Path(config_path)
+        self._mtime: float | None = None
         self.config_data = self._load_config()
 
     def _load_config(self) -> dict:
@@ -44,38 +45,59 @@ class AppConfig:
             raise FileNotFoundError(f"Config file not found: {self.config_path}")
 
         with open(self.config_path, 'r') as f:
-            return yaml.safe_load(f)
+            data = yaml.safe_load(f) or {}
+        try:
+            self._mtime = self.config_path.stat().st_mtime
+        except OSError:
+            self._mtime = None
+        return data
 
     def reload(self):
         """Reload config from file (for hot-reload support)"""
         self.config_data = self._load_config()
 
+    def _ensure_fresh(self) -> None:
+        """Pick up config.yaml edits without restarting the process."""
+        try:
+            mtime = self.config_path.stat().st_mtime
+        except OSError:
+            return
+        if self._mtime is None or mtime != self._mtime:
+            self.reload()
+
     @property
     def symbols(self) -> List[str]:
+        self._ensure_fresh()
         return self.config_data.get("symbols", [])
 
     @property
     def volatility_threshold(self) -> float:
+        self._ensure_fresh()
         return self.config_data.get("volatility", {}).get("threshold", 5.0)
 
     @property
     def lookback_days(self) -> int:
+        self._ensure_fresh()
         return self.config_data.get("volatility", {}).get("lookback_days", 365)
 
     @property
     def scheduler_interval_hours(self) -> int:
+        self._ensure_fresh()
         return self.config_data.get("scheduler", {}).get("interval_hours", 4)
 
     @property
     def max_alert_history(self) -> int:
+        self._ensure_fresh()
         return self.config_data.get("alerts", {}).get("max_history", 1000)
 
     @property
     def alert_retention_days(self) -> int:
+        self._ensure_fresh()
         return self.config_data.get("alerts", {}).get("retention_days", 90)
 
     @property
     def timezone(self) -> str:
+        self._ensure_fresh()
         return self.config_data.get("timezone", "CT")
 
 
