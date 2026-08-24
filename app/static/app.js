@@ -92,29 +92,38 @@ class VolatilityMonitor {
         const expandBtn = document.getElementById('logsExpandBtn');
         if (!toggle || !drawer) return;
 
-        // Collapsed by default
         this.logsOpen = false;
         this.logsExpanded = false;
-        drawer.hidden = true;
-        toggle.setAttribute('aria-expanded', 'false');
+        this.syncLogsPanel();
 
-        toggle.addEventListener('click', () => {
+        toggle.addEventListener('click', (event) => {
+            event.preventDefault();
+            event.stopPropagation();
             this.logsOpen = !this.logsOpen;
+            if (this.logsOpen) {
+                this.setLogsLoading();
+            }
             this.syncLogsPanel();
         });
 
-        closeBtn?.addEventListener('click', () => {
+        closeBtn?.addEventListener('click', (event) => {
+            event.preventDefault();
+            event.stopPropagation();
             this.logsOpen = false;
             this.syncLogsPanel();
         });
 
-        expandBtn?.addEventListener('click', () => {
+        expandBtn?.addEventListener('click', (event) => {
+            event.preventDefault();
+            event.stopPropagation();
             this.logsExpanded = !this.logsExpanded;
             this.syncLogsPanel();
         });
 
         document.querySelectorAll('.logs-tab').forEach(btn => {
-            btn.addEventListener('click', () => {
+            btn.addEventListener('click', (event) => {
+                event.preventDefault();
+                event.stopPropagation();
                 this.logsContainer = btn.dataset.container || 'stocks-dashboard';
                 document.querySelectorAll('.logs-tab').forEach(tab => {
                     const active = tab.dataset.container === this.logsContainer;
@@ -123,9 +132,19 @@ class VolatilityMonitor {
                 });
                 const output = document.getElementById('logsOutput');
                 if (output) delete output.dataset.primed;
-                this.fetchLogs();
+                if (this.logsOpen) {
+                    this.setLogsLoading();
+                    this.fetchLogs();
+                }
             });
         });
+    }
+
+    setLogsLoading() {
+        const output = document.getElementById('logsOutput');
+        const status = document.getElementById('logsStatus');
+        if (output) output.textContent = 'Loading…';
+        if (status) status.textContent = '';
     }
 
     syncLogsPanel() {
@@ -135,8 +154,8 @@ class VolatilityMonitor {
         if (!toggle || !drawer) return;
 
         toggle.setAttribute('aria-expanded', this.logsOpen ? 'true' : 'false');
-        drawer.hidden = !this.logsOpen;
-        drawer.classList.toggle('logs-drawer--expanded', this.logsExpanded);
+        drawer.classList.toggle('is-open', this.logsOpen);
+        drawer.classList.toggle('logs-drawer--expanded', this.logsOpen && this.logsExpanded);
 
         if (expandBtn) {
             expandBtn.setAttribute('aria-label', this.logsExpanded ? 'Smaller view' : 'Larger view');
@@ -145,13 +164,22 @@ class VolatilityMonitor {
         }
 
         if (this.logsOpen) {
-            this.fetchLogs();
             if (!this.logsPollTimer) {
                 this.logsPollTimer = setInterval(() => this.fetchLogs(), this.logsPollInterval);
             }
-        } else if (this.logsPollTimer) {
-            clearInterval(this.logsPollTimer);
-            this.logsPollTimer = null;
+            this.fetchLogs();
+        } else {
+            if (this.logsPollTimer) {
+                clearInterval(this.logsPollTimer);
+                this.logsPollTimer = null;
+            }
+            const output = document.getElementById('logsOutput');
+            const status = document.getElementById('logsStatus');
+            if (output) {
+                output.textContent = '';
+                delete output.dataset.primed;
+            }
+            if (status) status.textContent = '';
         }
     }
 
