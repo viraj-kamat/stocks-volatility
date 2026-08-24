@@ -41,6 +41,9 @@ services:
       REDIS_HOST: redis
       REDIS_PORT: 6379
       STOCKSPIKES_PWD: ${STOCKSPIKES_PWD:?Set STOCKSPIKES_PWD in your .env file}
+      ALPACA_API_KEY: ${ALPACA_API_KEY:-}
+      ALPACA_API_SECRET: ${ALPACA_API_SECRET:-}
+      ALPACA_DATA_FEED: ${ALPACA_DATA_FEED:-auto}
     ports:
       - "5000:5000"
     depends_on:

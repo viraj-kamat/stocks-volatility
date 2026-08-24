@@ -67,19 +67,33 @@ def _live_move_color(percent_change: Optional[float], threshold: float) -> dict:
 
 
 def _get_realtime_quotes(symbols: list) -> dict:
-    """Fetch realtime quotes, with a short Redis cache to limit Yahoo calls."""
+    """Fetch realtime quotes (Alpaca preferred), with Redis cache."""
     cached = cache.get_cached_latest_prices()
     if cached and all(s in cached for s in symbols):
         return cached
 
-    fetcher = StockDataFetcher()
     quotes = {}
-    for i, symbol in enumerate(symbols):
-        if i > 0:
-            time.sleep(0.4)
-        quote = fetcher.fetch_realtime_quote(symbol)
-        if quote:
-            quotes[symbol] = quote
+    from app.data.alpaca import alpaca_configured, fetch_snapshots
+
+    if alpaca_configured():
+        raw = fetch_snapshots(symbols)
+        for symbol in symbols:
+            quote = raw.get(symbol) or raw.get(symbol.upper())
+            if quote:
+                quotes[symbol] = quote
+    else:
+        logger.warning("ALPACA_API_KEY/SECRET not set — live quotes fall back to Yahoo")
+
+    # Fill any missing symbols via Yahoo
+    missing = [s for s in symbols if s not in quotes]
+    if missing:
+        fetcher = StockDataFetcher()
+        for i, symbol in enumerate(missing):
+            if i > 0:
+                time.sleep(0.4)
+            quote = fetcher.fetch_realtime_quote(symbol)
+            if quote:
+                quotes[symbol] = quote
 
     if quotes:
         cache.cache_latest_prices(quotes, ttl_minutes=1)

@@ -35,6 +35,11 @@ async def lifespan(app: FastAPI):
     else:
         logger.warning("STOCKSPIKES_PWD is not set — dashboard auth is disabled")
 
+    if settings.alpaca_api_key and settings.alpaca_api_secret:
+        logger.info("Alpaca live quotes enabled (feed=%s)", settings.alpaca_data_feed or "auto")
+    else:
+        logger.warning("Alpaca keys missing — live quotes will use Yahoo fallback")
+
     # Start scheduler
     if not scheduler.running:
         interval_hours = app_config.scheduler_interval_hours

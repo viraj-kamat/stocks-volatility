@@ -21,6 +21,12 @@ class Settings(BaseSettings):
     # Dashboard password (from STOCKSPIKES_PWD). Empty disables auth.
     stockspikes_pwd: str = os.getenv("STOCKSPIKES_PWD", "")
 
+    # Alpaca market data (live quotes). Empty → fall back to Yahoo for live.
+    alpaca_api_key: str = os.getenv("ALPACA_API_KEY", "")
+    alpaca_api_secret: str = os.getenv("ALPACA_API_SECRET", "")
+    # iex (free), sip (paid), overnight, or auto (iex daytime / overnight late night)
+    alpaca_data_feed: str = os.getenv("ALPACA_DATA_FEED", "auto")
+
     class Config:
         env_file = ".env"
 
