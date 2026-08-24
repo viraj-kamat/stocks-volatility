@@ -8,6 +8,10 @@ class VolatilityMonitor {
         this.alertPage = 1;
         this.alertPageSize = Number(localStorage.getItem('alertPageSize')) || 10;
         this.alertTotal = 0;
+        this.logsOpen = false;
+        this.logsContainer = 'stocks-dashboard';
+        this.logsPollTimer = null;
+        this.logsPollInterval = 2500;
     }
 
     async init() {
@@ -15,6 +19,7 @@ class VolatilityMonitor {
         this.activateTab(this.activeTab);
         this.syncPageSizeSelect();
         this.setupEventListeners();
+        this.setupLogsPanel();
         await this.updateData();
         if (this.selectedSymbol) {
             await this.loadAlertHistory(this.selectedSymbol);
@@ -77,6 +82,93 @@ class VolatilityMonitor {
                 this.loadAlertHistory(this.selectedSymbol);
             }
         });
+    }
+
+    setupLogsPanel() {
+        const toggle = document.getElementById('logsToggle');
+        const drawer = document.getElementById('logsDrawer');
+        const closeBtn = document.getElementById('logsCloseBtn');
+        if (!toggle || !drawer) return;
+
+        toggle.addEventListener('click', () => {
+            this.logsOpen = !this.logsOpen;
+            this.syncLogsPanel();
+        });
+
+        closeBtn?.addEventListener('click', () => {
+            this.logsOpen = false;
+            this.syncLogsPanel();
+        });
+
+        document.querySelectorAll('.logs-tab').forEach(btn => {
+            btn.addEventListener('click', () => {
+                this.logsContainer = btn.dataset.container || 'stocks-dashboard';
+                document.querySelectorAll('.logs-tab').forEach(tab => {
+                    const active = tab.dataset.container === this.logsContainer;
+                    tab.classList.toggle('active', active);
+                    tab.setAttribute('aria-selected', active ? 'true' : 'false');
+                });
+                const output = document.getElementById('logsOutput');
+                if (output) delete output.dataset.primed;
+                this.fetchLogs();
+            });
+        });
+    }
+
+    syncLogsPanel() {
+        const toggle = document.getElementById('logsToggle');
+        const drawer = document.getElementById('logsDrawer');
+        if (!toggle || !drawer) return;
+
+        toggle.setAttribute('aria-expanded', this.logsOpen ? 'true' : 'false');
+        drawer.hidden = !this.logsOpen;
+
+        if (this.logsOpen) {
+            this.fetchLogs();
+            if (!this.logsPollTimer) {
+                this.logsPollTimer = setInterval(() => this.fetchLogs(), this.logsPollInterval);
+            }
+        } else if (this.logsPollTimer) {
+            clearInterval(this.logsPollTimer);
+            this.logsPollTimer = null;
+        }
+    }
+
+    async fetchLogs() {
+        if (!this.logsOpen) return;
+
+        const output = document.getElementById('logsOutput');
+        const status = document.getElementById('logsStatus');
+        const stickToBottom = output
+            && (output.scrollTop + output.clientHeight >= output.scrollHeight - 24);
+
+        try {
+            const res = await fetch(`/api/logs/${encodeURIComponent(this.logsContainer)}?tail=250`);
+            const data = await res.json();
+            if (!res.ok) {
+                throw new Error(data.detail || 'Failed to load logs');
+            }
+
+            const lines = Array.isArray(data.lines) ? data.lines : [];
+            output.textContent = lines.length ? lines.join('\n') : '(no log output)';
+            if (status) {
+                status.textContent = data.status || '';
+            }
+            if (stickToBottom || lines.length) {
+                // Keep pinned to bottom while following
+                if (stickToBottom) {
+                    output.scrollTop = output.scrollHeight;
+                }
+            }
+            // On first load, jump to bottom
+            if (!output.dataset.primed) {
+                output.scrollTop = output.scrollHeight;
+                output.dataset.primed = '1';
+            }
+        } catch (err) {
+            output.textContent = `Error: ${err.message}`;
+            if (status) status.textContent = 'error';
+        }
     }
 
     applyTheme(theme) {

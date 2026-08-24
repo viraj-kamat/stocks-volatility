@@ -7,6 +7,7 @@ import os
 
 from app.routes import api
 from app.routes import auth as auth_routes
+from app.routes import logs as logs_routes
 from app.routes.static import serve_static
 from app.config import app_config, settings
 from app.scheduler.jobs import run_analysis_job, cleanup_old_alerts
@@ -112,6 +113,7 @@ app.add_middleware(AuthMiddleware)
 # Include routes
 app.include_router(auth_routes.router)
 app.include_router(api.router)
+app.include_router(logs_routes.router)
 
 # Serve static files
 serve_static(app)

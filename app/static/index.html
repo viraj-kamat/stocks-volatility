@@ -159,9 +159,29 @@
         </main>
 
         <footer class="site-footer">
-            <p>StockSpikes · Data via Yahoo Finance · Not investment advice</p>
+            <p>StockSpikes · Data via Yahoo Finance / Alpaca · Not investment advice</p>
         </footer>
     </div>
+
+    <aside id="logsPanel" class="logs-panel" aria-label="Container logs">
+        <button type="button" id="logsToggle" class="logs-toggle" aria-expanded="false" aria-controls="logsDrawer">
+            Logs
+        </button>
+        <div id="logsDrawer" class="logs-drawer" hidden>
+            <div class="logs-drawer-header">
+                <div class="logs-tabs" role="tablist" aria-label="Containers">
+                    <button type="button" class="logs-tab active" role="tab" data-container="stocks-dashboard" aria-selected="true">App</button>
+                    <button type="button" class="logs-tab" role="tab" data-container="stocks-mysql" aria-selected="false">MySQL</button>
+                    <button type="button" class="logs-tab" role="tab" data-container="stocks-redis" aria-selected="false">Redis</button>
+                </div>
+                <div class="logs-drawer-actions">
+                    <span id="logsStatus" class="logs-status"></span>
+                    <button type="button" id="logsCloseBtn" class="logs-close" aria-label="Close logs">×</button>
+                </div>
+            </div>
+            <pre id="logsOutput" class="logs-output" aria-live="polite">Open to load logs…</pre>
+        </div>
+    </aside>
 
     <script src="/static/app.js"></script>
 </body>

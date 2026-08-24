@@ -4,9 +4,6 @@
 symbols:
   - RIVN
   - BNED
-  - TSLA
-  - NVDA
-  - GOOGL
 
 # Volatility detection settings
 volatility:
