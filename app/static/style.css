@@ -1056,6 +1056,12 @@ body {
     display: flex;
     flex-direction: column;
     overflow: hidden;
+    transition: width 0.15s ease, height 0.15s ease;
+}
+
+.logs-drawer.logs-drawer--expanded {
+    width: min(960px, calc(100vw - 32px));
+    height: min(70vh, 720px);
 }
 
 .logs-drawer-header {
@@ -1099,7 +1105,7 @@ body {
 .logs-drawer-actions {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 4px;
 }
 
 .logs-status {
@@ -1107,20 +1113,27 @@ body {
     color: var(--color-text-muted);
     font-weight: 500;
     white-space: nowrap;
+    margin-right: 4px;
 }
 
-.logs-close {
+.logs-icon-btn {
     border: none;
     background: transparent;
     color: var(--color-text-muted);
-    font-size: 1.25rem;
+    font-size: 1rem;
     line-height: 1;
     cursor: pointer;
-    padding: 2px 6px;
+    padding: 4px 8px;
+    border-radius: var(--radius-sm);
 }
 
-.logs-close:hover {
+.logs-icon-btn:hover {
     color: var(--color-text);
+    background: var(--color-surface-hover);
+}
+
+.logs-close {
+    font-size: 1.25rem;
 }
 
 .logs-output {
@@ -1146,5 +1159,10 @@ body {
     .logs-drawer {
         width: calc(100vw - 24px);
         height: 45vh;
+    }
+
+    .logs-drawer.logs-drawer--expanded {
+        width: calc(100vw - 24px);
+        height: 75vh;
     }
 }

@@ -9,6 +9,7 @@ class VolatilityMonitor {
         this.alertPageSize = Number(localStorage.getItem('alertPageSize')) || 10;
         this.alertTotal = 0;
         this.logsOpen = false;
+        this.logsExpanded = false;
         this.logsContainer = 'stocks-dashboard';
         this.logsPollTimer = null;
         this.logsPollInterval = 2500;
@@ -88,7 +89,14 @@ class VolatilityMonitor {
         const toggle = document.getElementById('logsToggle');
         const drawer = document.getElementById('logsDrawer');
         const closeBtn = document.getElementById('logsCloseBtn');
+        const expandBtn = document.getElementById('logsExpandBtn');
         if (!toggle || !drawer) return;
+
+        // Collapsed by default
+        this.logsOpen = false;
+        this.logsExpanded = false;
+        drawer.hidden = true;
+        toggle.setAttribute('aria-expanded', 'false');
 
         toggle.addEventListener('click', () => {
             this.logsOpen = !this.logsOpen;
@@ -97,6 +105,11 @@ class VolatilityMonitor {
 
         closeBtn?.addEventListener('click', () => {
             this.logsOpen = false;
+            this.syncLogsPanel();
+        });
+
+        expandBtn?.addEventListener('click', () => {
+            this.logsExpanded = !this.logsExpanded;
             this.syncLogsPanel();
         });
 
@@ -118,10 +131,18 @@ class VolatilityMonitor {
     syncLogsPanel() {
         const toggle = document.getElementById('logsToggle');
         const drawer = document.getElementById('logsDrawer');
+        const expandBtn = document.getElementById('logsExpandBtn');
         if (!toggle || !drawer) return;
 
         toggle.setAttribute('aria-expanded', this.logsOpen ? 'true' : 'false');
         drawer.hidden = !this.logsOpen;
+        drawer.classList.toggle('logs-drawer--expanded', this.logsExpanded);
+
+        if (expandBtn) {
+            expandBtn.setAttribute('aria-label', this.logsExpanded ? 'Smaller view' : 'Larger view');
+            expandBtn.title = this.logsExpanded ? 'Smaller view' : 'Larger view';
+            expandBtn.textContent = this.logsExpanded ? '▭' : '⛶';
+        }
 
         if (this.logsOpen) {
             this.fetchLogs();
@@ -152,15 +173,12 @@ class VolatilityMonitor {
             const lines = Array.isArray(data.lines) ? data.lines : [];
             output.textContent = lines.length ? lines.join('\n') : '(no log output)';
             if (status) {
-                status.textContent = data.status || '';
+                const name = data.resolved_name ? ` · ${data.resolved_name}` : '';
+                status.textContent = `${data.status || ''}${name}`;
             }
-            if (stickToBottom || lines.length) {
-                // Keep pinned to bottom while following
-                if (stickToBottom) {
-                    output.scrollTop = output.scrollHeight;
-                }
+            if (stickToBottom) {
+                output.scrollTop = output.scrollHeight;
             }
-            // On first load, jump to bottom
             if (!output.dataset.primed) {
                 output.scrollTop = output.scrollHeight;
                 output.dataset.primed = '1';
