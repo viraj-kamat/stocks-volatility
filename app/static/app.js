@@ -3,7 +3,7 @@ class VolatilityMonitor {
         this.pollInterval = 30000; // 30 seconds
         this.isRefreshing = false;
         this.activeTab = localStorage.getItem('activeTab') || 'stocks';
-        this.theme = localStorage.getItem('theme') || 'light';
+        this.theme = localStorage.getItem('theme') || 'dark';
         this.selectedSymbol = localStorage.getItem('selectedSymbol') || null;
         this.alertPage = 1;
         this.alertPageSize = Number(localStorage.getItem('alertPageSize')) || 10;

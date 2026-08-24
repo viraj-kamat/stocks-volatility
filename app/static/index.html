@@ -6,11 +6,11 @@
     <title>StockSpikes — Volatility Monitor</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Syne:wght@500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/static/style.css">
     <script>
         (function () {
-            const theme = localStorage.getItem('theme') || 'light';
+            const theme = localStorage.getItem('theme') || 'dark';
             document.documentElement.setAttribute('data-theme', theme);
         })();
     </script>
@@ -18,17 +18,17 @@
 <body>
     <div class="app-shell">
         <header class="site-header">
+            <div class="header-accent" aria-hidden="true"></div>
             <div class="header-inner">
                 <div class="brand">
                     <div class="brand-mark" aria-hidden="true">
                         <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <path d="M4 18L9 10L13 14L20 6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
-                            <path d="M16 6H20V10" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+                            <path d="M13 2L4 14h7l-1 8 10-14h-7l0-6z" fill="currentColor"/>
                         </svg>
                     </div>
                     <div class="brand-text">
+                        <p class="brand-eyebrow">Volatility radar</p>
                         <h1>StockSpikes</h1>
-                        <p class="brand-tagline">Volatility monitoring &amp; alert history</p>
                     </div>
                 </div>
                 <div class="header-actions">
@@ -70,6 +70,7 @@
                 <div class="dashboard">
                     <section class="card section">
                         <div class="section-header">
+                            <span class="section-index" aria-hidden="true">01</span>
                             <div>
                                 <h2>Monitored Stocks</h2>
                                 <p class="section-desc">Live quotes and latest stored alerts for your watchlist.</p>
@@ -98,6 +99,7 @@
 
                     <section class="card section" id="alertHistorySection">
                         <div class="section-header">
+                            <span class="section-index" aria-hidden="true">02</span>
                             <div>
                                 <h2 id="alertHistoryTitle">Alert History</h2>
                                 <p id="alertHistoryHint" class="section-desc">Select a stock’s Last Alert cell to view its full alert history.</p>
@@ -145,6 +147,7 @@
                 <div class="dashboard">
                     <section class="card section">
                         <div class="section-header">
+                            <span class="section-index" aria-hidden="true">01</span>
                             <div>
                                 <h2>Configuration</h2>
                                 <p class="section-desc">Current watchlist and analysis settings from config.yaml.</p>
@@ -159,7 +162,7 @@
         </main>
 
         <footer class="site-footer">
-            <p>StockSpikes · Data via Yahoo Finance / Alpaca · Not investment advice</p>
+            <p><span class="footer-mark">◆</span> StockSpikes · Yahoo / Alpaca feeds · Not investment advice</p>
         </footer>
     </div>
 
