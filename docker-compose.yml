@@ -60,4 +60,5 @@ volumes:
 
 networks:
   stocks_network:
+    name: stocks_network
     driver: bridge
