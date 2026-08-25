@@ -1,12 +1,9 @@
 # StockSpikes Configuration
 
-# Stock symbols to monitor (volatile / under ~$50 focus)
+# Stock symbols to monitor (volatile / under ~$50, no crypto)
 symbols:
   - RIVN
   - BNED
-  - MARA
-  - RIOT
-  - CLSK
   - LCID
   - NIO
   - AMC
@@ -18,6 +15,21 @@ symbols:
   - UPST
   - JOBY
   - SMCI
+  - LUNR
+  - RCAT
+  - QBTS
+  - OKLO
+  - SOUN
+  - SMR
+  - BYND
+  - UUUU
+  - BBAI
+  - SNAP
+  - CHPT
+  - DNA
+  - SPCE
+  - PATH
+  - JBLU
 
 # Volatility detection settings
 volatility:
