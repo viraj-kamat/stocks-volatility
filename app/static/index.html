@@ -73,13 +73,14 @@
                             <span class="section-index" aria-hidden="true">01</span>
                             <div>
                                 <h2>Monitored Stocks</h2>
-                                <p class="section-desc">Live quotes sorted by Live severity (highest first). Updates on refresh and every 30s.</p>
+                                <p class="section-desc">Live quotes sorted by pin, then Live severity. Pin favorites to keep them at the top.</p>
                             </div>
                         </div>
                         <div class="table-wrap">
                             <table class="data-table" id="stocksTable">
                                 <thead>
                                     <tr>
+                                        <th class="col-pin" aria-label="Pin"></th>
                                         <th>Symbol</th>
                                         <th class="col-num">Price</th>
                                         <th class="col-num">Open</th>
@@ -91,7 +92,7 @@
                                     </tr>
                                 </thead>
                                 <tbody id="stocksTableBody">
-                                    <tr><td colspan="8" class="loading">Loading stocks…</td></tr>
+                                    <tr><td colspan="9" class="loading">Loading stocks…</td></tr>
                                 </tbody>
                             </table>
                         </div>

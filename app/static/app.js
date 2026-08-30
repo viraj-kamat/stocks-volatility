@@ -59,6 +59,16 @@ class VolatilityMonitor {
         });
 
         document.getElementById('stocksTableBody').addEventListener('click', (event) => {
+            const pinBtn = event.target.closest('[data-action="toggle-pin"]');
+            if (pinBtn) {
+                event.preventDefault();
+                const row = pinBtn.closest('tr[data-symbol]');
+                if (row) {
+                    this.toggleStockPin(row.dataset.symbol, pinBtn.dataset.pinned === 'true');
+                }
+                return;
+            }
+
             // External Nasdaq links handle themselves
             if (event.target.closest('a.nasdaq-link')) return;
 
@@ -321,6 +331,10 @@ class VolatilityMonitor {
 
     sortStocksByLiveSeverity(stocks) {
         return [...stocks].sort((a, b) => {
+            const pinA = a.pinned ? (a.pin_order ?? 0) : Number.MAX_SAFE_INTEGER;
+            const pinB = b.pinned ? (b.pin_order ?? 0) : Number.MAX_SAFE_INTEGER;
+            if (pinA !== pinB) return pinA - pinB;
+
             const rankDiff = this.liveSeverityRank(b) - this.liveSeverityRank(a);
             if (rankDiff !== 0) return rankDiff;
             const absA = Math.abs(Number(a.percent_change) || 0);
@@ -328,6 +342,43 @@ class VolatilityMonitor {
             if (absB !== absA) return absB - absA;
             return String(a.symbol || '').localeCompare(String(b.symbol || ''));
         });
+    }
+
+    async toggleStockPin(symbol, currentlyPinned) {
+        try {
+            const response = await fetch(`/api/stocks/${encodeURIComponent(symbol)}/pin`, {
+                method: 'PUT',
+                credentials: 'same-origin',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ pinned: !currentlyPinned }),
+            });
+            if (!response.ok) {
+                const payload = await response.json().catch(() => ({}));
+                throw new Error(payload.detail || `Pin failed (${response.status})`);
+            }
+            await this.fetchAndDisplayStocks();
+        } catch (error) {
+            console.error('Error toggling pin:', error);
+            alert(error.message || 'Could not update pin');
+        }
+    }
+
+    renderPinButton(stock) {
+        const pinned = Boolean(stock.pinned);
+        const label = pinned ? `Unpin ${stock.symbol}` : `Pin ${stock.symbol}`;
+        const iconClass = pinned ? 'pin-btn pin-btn--active' : 'pin-btn';
+        return `
+            <button type="button"
+                class="${iconClass}"
+                data-action="toggle-pin"
+                data-pinned="${pinned}"
+                aria-label="${label}"
+                title="${label}">
+                <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                    <path d="M16 12V4h1V2H7v2h1v8l-2 2v2h5.2v6h1.6v-6H18v-2l-2-2z"/>
+                </svg>
+            </button>
+        `;
     }
 
     async fetchAndDisplayStocks() {
@@ -341,7 +392,7 @@ class VolatilityMonitor {
             this.stocks = [];
             document.getElementById('stocksPagination').hidden = true;
             document.getElementById('stocksTableBody').innerHTML =
-                `<tr><td colspan="8" class="error">Error loading stocks: ${error.message}</td></tr>`;
+                `<tr><td colspan="9" class="error">Error loading stocks: ${error.message}</td></tr>`;
         }
     }
 
@@ -374,7 +425,7 @@ class VolatilityMonitor {
         const body = document.getElementById('stocksTableBody');
 
         if (!this.stocks.length) {
-            body.innerHTML = '<tr><td colspan="8" class="loading">No stocks configured</td></tr>';
+            body.innerHTML = '<tr><td colspan="9" class="loading">No stocks configured</td></tr>';
             this.updateStocksPaginationControls();
             return;
         }
@@ -402,8 +453,10 @@ class VolatilityMonitor {
             const sym = stock.symbol.toLowerCase();
             const stockUrl = `https://www.nasdaq.com/market-activity/stocks/${sym}`;
             const chainUrl = `https://www.nasdaq.com/market-activity/stocks/${sym}/option-chain`;
+            const pinnedClass = stock.pinned ? ' stock-row--pinned' : '';
             return `
-                <tr class="stock-row ${selected}" data-symbol="${stock.symbol}">
+                <tr class="stock-row ${selected}${pinnedClass}" data-symbol="${stock.symbol}">
+                    <td class="col-pin">${this.renderPinButton(stock)}</td>
                     <td class="col-symbol">
                         <a class="nasdaq-link symbol-link" href="${stockUrl}" target="_blank" rel="noopener noreferrer">${stock.symbol}</a>
                     </td>

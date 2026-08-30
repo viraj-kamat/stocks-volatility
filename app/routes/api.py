@@ -1,9 +1,11 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
+from sqlalchemy import func
 from datetime import datetime
 from typing import Optional
+from pydantic import BaseModel
 from app.database.connection import get_db
-from app.database.models import Alert, Stock
+from app.database.models import Alert, Stock, PinnedStock
 from app.config import app_config
 from app.scheduler.jobs import run_analysis_job, cleanup_old_alerts
 from app.data.fetcher import StockDataFetcher
@@ -17,6 +19,20 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api", tags=["api"])
 
 SEVERITY_TO_COLOR = {"high": "red", "medium": "yellow", "low": "blue"}
+
+
+class PinRequest(BaseModel):
+    pinned: bool
+
+
+def _pinned_map(db: Session) -> dict:
+    """symbol → pin_order for all pinned stocks."""
+    rows = (
+        db.query(PinnedStock)
+        .order_by(PinnedStock.pin_order.asc(), PinnedStock.id.asc())
+        .all()
+    )
+    return {row.symbol.upper(): row.pin_order for row in rows}
 
 
 def _latest_alert_info(db: Session, symbol: str) -> dict:
@@ -107,6 +123,7 @@ def get_stocks(db: Session = Depends(get_db)):
         symbols = app_config.symbols
         threshold = app_config.volatility_threshold
         quotes = _get_realtime_quotes(symbols)
+        pinned = _pinned_map(db)
 
         result = []
         for symbol in symbols:
@@ -119,6 +136,8 @@ def get_stocks(db: Session = Depends(get_db)):
 
             latest_alert = _latest_alert_info(db, symbol)
             live = _live_move_color(quote.get("percent_change"), threshold)
+            sym_upper = symbol.upper()
+            is_pinned = sym_upper in pinned
 
             result.append({
                 "symbol": symbol,
@@ -137,6 +156,8 @@ def get_stocks(db: Session = Depends(get_db)):
                 "alert_date": latest_alert["triggered_at_display"],
                 "live": live["color"],
                 "live_label": live["label"],
+                "pinned": is_pinned,
+                "pin_order": pinned.get(sym_upper) if is_pinned else None,
                 "unread_alerts": alert_count,
                 "last_update": stock.last_update.isoformat() if stock and stock.last_update else None,
                 # backward-compatible field
@@ -147,6 +168,31 @@ def get_stocks(db: Session = Depends(get_db)):
     except Exception as e:
         logger.error(f"Error getting stocks: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.put("/stocks/{symbol}/pin")
+def set_stock_pin(symbol: str, body: PinRequest, db: Session = Depends(get_db)):
+    """Pin or unpin a watchlist symbol (persisted in MySQL)."""
+    sym = symbol.upper().strip()
+    watchlist = {s.upper() for s in app_config.symbols}
+    if sym not in watchlist:
+        raise HTTPException(status_code=404, detail=f"{sym} is not on the watchlist")
+
+    existing = db.query(PinnedStock).filter(PinnedStock.symbol == sym).first()
+
+    if body.pinned:
+        if existing:
+            return {"symbol": sym, "pinned": True, "pin_order": existing.pin_order}
+        max_order = db.query(func.max(PinnedStock.pin_order)).scalar()
+        next_order = (max_order if max_order is not None else -1) + 1
+        db.add(PinnedStock(symbol=sym, pin_order=next_order))
+        db.commit()
+        return {"symbol": sym, "pinned": True, "pin_order": next_order}
+
+    if existing:
+        db.delete(existing)
+        db.commit()
+    return {"symbol": sym, "pinned": False, "pin_order": None}
 
 
 def _format_alert_message(alert: Alert, tz_name: str) -> str:

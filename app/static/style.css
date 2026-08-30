@@ -639,6 +639,54 @@ body {
     box-shadow: inset 4px 0 0 var(--color-accent);
 }
 
+.stock-row--pinned {
+    background: rgba(255, 107, 53, 0.06) !important;
+}
+
+.stock-row--pinned:hover {
+    background: rgba(255, 107, 53, 0.1) !important;
+}
+
+.col-pin {
+    width: 40px;
+    text-align: center;
+    padding-left: 12px !important;
+    padding-right: 8px !important;
+}
+
+.pin-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    padding: 0;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    background: transparent;
+    color: var(--color-text-muted);
+    cursor: pointer;
+    transition: color 0.12s, border-color 0.12s, background 0.12s;
+}
+
+.pin-btn svg {
+    width: 14px;
+    height: 14px;
+}
+
+.pin-btn:hover {
+    color: var(--color-accent);
+    border-color: var(--color-accent);
+    background: var(--color-accent-soft);
+}
+
+.pin-btn--active {
+    color: var(--color-accent);
+    border-color: var(--color-accent);
+    background: var(--color-accent-soft);
+    box-shadow: 0 0 10px var(--color-accent-glow);
+}
+
 /* ── Status columns ── */
 
 .col-status {
