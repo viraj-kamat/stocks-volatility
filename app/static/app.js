@@ -6,7 +6,7 @@ class VolatilityMonitor {
         this.theme = localStorage.getItem('theme') || 'dark';
         this.stocks = [];
         this.stocksPage = 1;
-        this.stocksPageSize = Number(localStorage.getItem('stocksPageSize')) || 5;
+        this.stocksPageSize = Number(localStorage.getItem('stocksPageSize')) || 20;
         this.logsOpen = false;
         this.logsExpanded = false;
         this.logsContainer = 'stocks-dashboard';
@@ -27,7 +27,7 @@ class VolatilityMonitor {
     syncStocksPageSizeSelect() {
         const select = document.getElementById('stocksPageSize');
         if (![5, 10, 20, 50].includes(this.stocksPageSize)) {
-            this.stocksPageSize = 5;
+            this.stocksPageSize = 20;
         }
         select.value = String(this.stocksPageSize);
     }
@@ -55,7 +55,7 @@ class VolatilityMonitor {
         });
 
         document.getElementById('stocksPageSize').addEventListener('change', (event) => {
-            this.stocksPageSize = Number(event.target.value) || 5;
+            this.stocksPageSize = Number(event.target.value) || 20;
             localStorage.setItem('stocksPageSize', String(this.stocksPageSize));
             this.stocksPage = 1;
             this.renderStocksPage();
@@ -217,7 +217,7 @@ class VolatilityMonitor {
     }
 
     activateTab(tab) {
-        const allowed = ['stocks', 'configuration'];
+        const allowed = ['stocks', 'alerts', 'configuration'];
         // Options tab is visible but disabled for now
         const next = allowed.includes(tab) ? tab : 'stocks';
         this.activeTab = next;
@@ -230,6 +230,7 @@ class VolatilityMonitor {
         });
 
         document.getElementById('panelStocks').hidden = next !== 'stocks';
+        document.getElementById('panelAlerts').hidden = next !== 'alerts';
         document.getElementById('panelOptions').hidden = next !== 'options';
         document.getElementById('panelConfiguration').hidden = next !== 'configuration';
     }

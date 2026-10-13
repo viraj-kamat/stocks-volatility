@@ -43,6 +43,7 @@
         <main class="main-content">
             <nav class="tabs" role="tablist" aria-label="Main sections">
                 <button type="button" class="tab-btn" role="tab" id="tabStocks" data-tab="stocks" aria-controls="panelStocks">Stocks</button>
+                <button type="button" class="tab-btn" role="tab" id="tabAlerts" data-tab="alerts" aria-controls="panelAlerts">Alerts</button>
                 <button type="button" class="tab-btn tab-disabled" role="tab" id="tabOptions" data-tab="options" aria-controls="panelOptions" disabled aria-disabled="true" title="Coming soon">Options</button>
                 <button type="button" class="tab-btn" role="tab" id="tabConfiguration" data-tab="configuration" aria-controls="panelConfiguration">Configuration</button>
             </nav>
@@ -101,9 +102,9 @@
                             <div class="pagination-left">
                                 <label for="stocksPageSize">Per page</label>
                                 <select id="stocksPageSize" aria-label="Stocks per page">
-                                    <option value="5" selected>5</option>
+                                    <option value="5">5</option>
                                     <option value="10">10</option>
-                                    <option value="20">20</option>
+                                    <option value="20" selected>20</option>
                                     <option value="50">50</option>
                                 </select>
                             </div>
@@ -115,6 +116,10 @@
                         </div>
                     </section>
                 </div>
+            </div>
+
+            <div id="panelAlerts" class="tab-panel" role="tabpanel" aria-labelledby="tabAlerts" hidden>
+                <!-- Alerts content coming later -->
             </div>
 
             <div id="panelOptions" class="tab-panel" role="tabpanel" aria-labelledby="tabOptions" hidden>
