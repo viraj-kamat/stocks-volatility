@@ -324,6 +324,9 @@ class VolatilityMonitor {
         try {
             const response = await fetch('/api/stocks');
             const stocks = await response.json();
+            if (!response.ok) {
+                throw new Error(stocks.detail || `HTTP ${response.status}`);
+            }
             this.stocks = this.sortStocksByLiveSeverity(Array.isArray(stocks) ? stocks : []);
             this.renderStocksPage();
         } catch (error) {

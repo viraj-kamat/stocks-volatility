@@ -87,34 +87,21 @@ def _get_company_names(symbols: list) -> dict:
 
 
 def _get_realtime_quotes(symbols: list) -> dict:
-    """Fetch realtime quotes (Alpaca preferred), with Redis cache."""
+    """Fetch realtime quotes from Alpaca only, with a short Redis cache."""
+    from app.data.alpaca import alpaca_configured, fetch_snapshots
+
+    if not alpaca_configured():
+        raise HTTPException(
+            status_code=503,
+            detail="Alpaca API keys not set. Add ALPACA_API_KEY and ALPACA_API_SECRET to .env and restart.",
+        )
+
     cached = cache.get_cached_latest_prices()
     if cached and all(s in cached for s in symbols):
         return cached
 
-    quotes = {}
-    from app.data.alpaca import alpaca_configured, fetch_snapshots
-
-    if alpaca_configured():
-        raw = fetch_snapshots(symbols)
-        for symbol in symbols:
-            quote = raw.get(symbol) or raw.get(symbol.upper())
-            if quote:
-                quotes[symbol] = quote
-    else:
-        logger.warning("ALPACA_API_KEY/SECRET not set — live quotes fall back to Yahoo")
-
-    # Fill any missing symbols via Yahoo
-    missing = [s for s in symbols if s not in quotes]
-    if missing:
-        fetcher = StockDataFetcher()
-        for i, symbol in enumerate(missing):
-            if i > 0:
-                time.sleep(0.4)
-            quote = fetcher.fetch_realtime_quote(symbol)
-            if quote:
-                quotes[symbol] = quote
-
+    raw = fetch_snapshots(symbols)
+    quotes = {s: raw[s.upper()] for s in symbols if s.upper() in raw}
     if quotes:
         cache.cache_latest_prices(quotes, ttl_minutes=1)
     return quotes
@@ -159,6 +146,8 @@ def get_stocks(db: Session = Depends(get_db)):
             })
 
         return result
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Error getting stocks: {e}")
         raise HTTPException(status_code=500, detail=str(e))
