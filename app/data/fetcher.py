@@ -1,8 +1,5 @@
 import yfinance as yf
-from app.data.session import current_session
 import logging
-import time
-from datetime import datetime, timedelta
 import pandas as pd
 from typing import Optional, List, Dict
 
@@ -12,42 +9,6 @@ logger = logging.getLogger(__name__)
 class StockDataFetcher:
     def __init__(self, lookback_days: int = 365):
         self.lookback_days = lookback_days
-
-    def fetch_historical_data(self, symbol: str) -> Optional[pd.DataFrame]:
-        """
-        Fetch historical stock data for the given symbol.
-        Returns a DataFrame with OHLCV data and calculated percent changes.
-        """
-        try:
-            end_date = datetime.now()
-            start_date = end_date - timedelta(days=self.lookback_days)
-
-            logger.info(f"Fetching data for {symbol} from {start_date.date()} to {end_date.date()}")
-
-            # Prefer Ticker.history; more reliable against Yahoo rate/API quirks
-            ticker = yf.Ticker(symbol)
-            data = ticker.history(start=start_date, end=end_date, auto_adjust=True)
-
-            if data.empty:
-                logger.warning(f"No data fetched for {symbol}")
-                return None
-
-            # Flatten multi-index columns if present (newer yfinance)
-            if isinstance(data.columns, pd.MultiIndex):
-                data.columns = data.columns.get_level_values(0)
-
-            # Calculate daily percent change
-            data['Percent_Change'] = data['Close'].pct_change() * 100
-
-            # Reset index to make Date a column
-            data.reset_index(inplace=True)
-
-            logger.info(f"Successfully fetched {len(data)} rows for {symbol}")
-            return data
-
-        except Exception as e:
-            logger.error(f"Error fetching data for {symbol}: {e}")
-            return None
 
     def fetch_latest_price(self, symbol: str) -> Optional[Dict]:
         """
@@ -121,14 +82,3 @@ class StockDataFetcher:
         except Exception as e:
             logger.error(f"Error fetching realtime quote for {symbol}: {e}")
             return None
-
-    def fetch_multiple(self, symbols: List[str]) -> Dict[str, Optional[pd.DataFrame]]:
-        """
-        Fetch data for multiple symbols.
-        """
-        results = {}
-        for i, symbol in enumerate(symbols):
-            if i > 0:
-                time.sleep(1)  # avoid Yahoo rate limits
-            results[symbol] = self.fetch_historical_data(symbol)
-        return results

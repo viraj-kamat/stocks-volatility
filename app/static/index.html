@@ -43,6 +43,7 @@
         <main class="main-content">
             <nav class="tabs" role="tablist" aria-label="Main sections">
                 <button type="button" class="tab-btn" role="tab" id="tabStocks" data-tab="stocks" aria-controls="panelStocks">Stocks</button>
+                <button type="button" class="tab-btn" role="tab" id="tabAlerts" data-tab="alerts" aria-controls="panelAlerts">Alerts</button>
                 <button type="button" class="tab-btn tab-disabled" role="tab" id="tabOptions" data-tab="options" aria-controls="panelOptions" disabled aria-disabled="true" title="Coming soon">Options</button>
                 <button type="button" class="tab-btn" role="tab" id="tabConfiguration" data-tab="configuration" aria-controls="panelConfiguration">Configuration</button>
             </nav>
@@ -89,12 +90,11 @@
                                         <th class="col-num">Prev Close</th>
                                         <th class="col-num">Volume</th>
                                         <th>Session</th>
-                                        <th>Last Alert</th>
                                         <th>Live</th>
                                     </tr>
                                 </thead>
                                 <tbody id="stocksTableBody">
-                                    <tr><td colspan="11" class="loading">Loading stocks…</td></tr>
+                                    <tr><td colspan="10" class="loading">Loading stocks…</td></tr>
                                 </tbody>
                             </table>
                         </div>
@@ -102,9 +102,9 @@
                             <div class="pagination-left">
                                 <label for="stocksPageSize">Per page</label>
                                 <select id="stocksPageSize" aria-label="Stocks per page">
-                                    <option value="5" selected>5</option>
+                                    <option value="5">5</option>
                                     <option value="10">10</option>
-                                    <option value="20">20</option>
+                                    <option value="20" selected>20</option>
                                     <option value="50">50</option>
                                 </select>
                             </div>
@@ -115,47 +115,11 @@
                             </div>
                         </div>
                     </section>
-
-                    <section class="card section" id="alertHistorySection">
-                        <div class="section-header">
-                            <span class="section-index" aria-hidden="true">02</span>
-                            <div>
-                                <h2 id="alertHistoryTitle">Alert History</h2>
-                                <p id="alertHistoryHint" class="section-desc">Select a stock’s Last Alert cell to view its full alert history.</p>
-                            </div>
-                        </div>
-                        <div class="table-wrap">
-                            <table class="data-table alerts-table" id="alertsTable">
-                                <thead>
-                                    <tr>
-                                        <th class="col-date">Date</th>
-                                        <th class="col-num col-change">Change</th>
-                                        <th class="col-num col-from">From</th>
-                                        <th class="col-num col-to">To</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="alertsTableBody">
-                                    <tr><td colspan="4" class="loading">No stock selected</td></tr>
-                                </tbody>
-                            </table>
-                        </div>
-                        <div class="pagination" id="alertPagination" hidden>
-                            <div class="pagination-left">
-                                <label for="alertPageSize">Per page</label>
-                                <select id="alertPageSize" aria-label="Alerts per page">
-                                    <option value="10" selected>10</option>
-                                    <option value="20">20</option>
-                                    <option value="50">50</option>
-                                </select>
-                            </div>
-                            <div class="pagination-right">
-                                <span id="alertPageInfo" class="page-info"></span>
-                                <button type="button" id="alertPrevBtn" class="btn btn-secondary" disabled>Previous</button>
-                                <button type="button" id="alertNextBtn" class="btn btn-secondary" disabled>Next</button>
-                            </div>
-                        </div>
-                    </section>
                 </div>
+            </div>
+
+            <div id="panelAlerts" class="tab-panel" role="tabpanel" aria-labelledby="tabAlerts" hidden>
+                <!-- Alerts content coming later -->
             </div>
 
             <div id="panelOptions" class="tab-panel" role="tabpanel" aria-labelledby="tabOptions" hidden>

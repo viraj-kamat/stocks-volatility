@@ -76,26 +76,6 @@ class AppConfig:
         return self.config_data.get("volatility", {}).get("threshold", 5.0)
 
     @property
-    def lookback_days(self) -> int:
-        self._ensure_fresh()
-        return self.config_data.get("volatility", {}).get("lookback_days", 365)
-
-    @property
-    def scheduler_interval_hours(self) -> int:
-        self._ensure_fresh()
-        return self.config_data.get("scheduler", {}).get("interval_hours", 4)
-
-    @property
-    def max_alert_history(self) -> int:
-        self._ensure_fresh()
-        return self.config_data.get("alerts", {}).get("max_history", 1000)
-
-    @property
-    def alert_retention_days(self) -> int:
-        self._ensure_fresh()
-        return self.config_data.get("alerts", {}).get("retention_days", 90)
-
-    @property
     def timezone(self) -> str:
         self._ensure_fresh()
         return self.config_data.get("timezone", "CT")

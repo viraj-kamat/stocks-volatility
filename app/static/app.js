@@ -4,13 +4,9 @@ class VolatilityMonitor {
         this.isRefreshing = false;
         this.activeTab = localStorage.getItem('activeTab') || 'stocks';
         this.theme = localStorage.getItem('theme') || 'dark';
-        this.selectedSymbol = localStorage.getItem('selectedSymbol') || null;
         this.stocks = [];
         this.stocksPage = 1;
-        this.stocksPageSize = Number(localStorage.getItem('stocksPageSize')) || 5;
-        this.alertPage = 1;
-        this.alertPageSize = Number(localStorage.getItem('alertPageSize')) || 10;
-        this.alertTotal = 0;
+        this.stocksPageSize = Number(localStorage.getItem('stocksPageSize')) || 20;
         this.logsOpen = false;
         this.logsExpanded = false;
         this.logsContainer = 'stocks-dashboard';
@@ -22,30 +18,18 @@ class VolatilityMonitor {
         this.applyTheme(this.theme);
         this.activateTab(this.activeTab);
         this.syncStocksPageSizeSelect();
-        this.syncAlertPageSizeSelect();
         this.setupEventListeners();
         this.setupLogsPanel();
         await this.updateData();
-        if (this.selectedSymbol) {
-            await this.loadAlertHistory(this.selectedSymbol);
-        }
         this.startPolling();
     }
 
     syncStocksPageSizeSelect() {
         const select = document.getElementById('stocksPageSize');
         if (![5, 10, 20, 50].includes(this.stocksPageSize)) {
-            this.stocksPageSize = 5;
+            this.stocksPageSize = 20;
         }
         select.value = String(this.stocksPageSize);
-    }
-
-    syncAlertPageSizeSelect() {
-        const select = document.getElementById('alertPageSize');
-        if (![10, 20, 50].includes(this.alertPageSize)) {
-            this.alertPageSize = 10;
-        }
-        select.value = String(this.alertPageSize);
     }
 
     setupEventListeners() {
@@ -68,20 +52,10 @@ class VolatilityMonitor {
                 }
                 return;
             }
-
-            // External Nasdaq links handle themselves
-            if (event.target.closest('a.nasdaq-link')) return;
-
-            const loadCell = event.target.closest('[data-action="load-alerts"]');
-            if (!loadCell) return;
-
-            const row = loadCell.closest('tr[data-symbol]');
-            if (!row) return;
-            this.selectStock(row.dataset.symbol);
         });
 
         document.getElementById('stocksPageSize').addEventListener('change', (event) => {
-            this.stocksPageSize = Number(event.target.value) || 5;
+            this.stocksPageSize = Number(event.target.value) || 20;
             localStorage.setItem('stocksPageSize', String(this.stocksPageSize));
             this.stocksPage = 1;
             this.renderStocksPage();
@@ -98,32 +72,6 @@ class VolatilityMonitor {
             if (this.stocksPage >= totalPages) return;
             this.stocksPage += 1;
             this.renderStocksPage();
-        });
-
-        document.getElementById('alertPageSize').addEventListener('change', (event) => {
-            this.alertPageSize = Number(event.target.value) || 10;
-            localStorage.setItem('alertPageSize', String(this.alertPageSize));
-            this.alertPage = 1;
-            if (this.selectedSymbol) {
-                this.loadAlertHistory(this.selectedSymbol);
-            }
-        });
-
-        document.getElementById('alertPrevBtn').addEventListener('click', () => {
-            if (this.alertPage <= 1) return;
-            this.alertPage -= 1;
-            if (this.selectedSymbol) {
-                this.loadAlertHistory(this.selectedSymbol);
-            }
-        });
-
-        document.getElementById('alertNextBtn').addEventListener('click', () => {
-            const totalPages = Math.max(1, Math.ceil(this.alertTotal / this.alertPageSize));
-            if (this.alertPage >= totalPages) return;
-            this.alertPage += 1;
-            if (this.selectedSymbol) {
-                this.loadAlertHistory(this.selectedSymbol);
-            }
         });
     }
 
@@ -269,7 +217,7 @@ class VolatilityMonitor {
     }
 
     activateTab(tab) {
-        const allowed = ['stocks', 'configuration'];
+        const allowed = ['stocks', 'alerts', 'configuration'];
         // Options tab is visible but disabled for now
         const next = allowed.includes(tab) ? tab : 'stocks';
         this.activeTab = next;
@@ -282,6 +230,7 @@ class VolatilityMonitor {
         });
 
         document.getElementById('panelStocks').hidden = next !== 'stocks';
+        document.getElementById('panelAlerts').hidden = next !== 'alerts';
         document.getElementById('panelOptions').hidden = next !== 'options';
         document.getElementById('panelConfiguration').hidden = next !== 'configuration';
     }
@@ -301,16 +250,6 @@ class VolatilityMonitor {
     formatMoney(value) {
         if (value === null || value === undefined || Number.isNaN(Number(value))) return '—';
         return `$${Number(value).toFixed(2)}`;
-    }
-
-    /** Prior close inferred from trigger close and day-over-day % change. */
-    priceFrom(alert) {
-        const to = alert.price_at_trigger;
-        const pct = alert.percent_change;
-        if (to === null || to === undefined || pct === null || pct === undefined) return null;
-        const factor = 1 + Number(pct) / 100;
-        if (!factor) return null;
-        return Number(to) / factor;
     }
 
     formatPct(value) {
@@ -392,7 +331,7 @@ class VolatilityMonitor {
             this.stocks = [];
             document.getElementById('stocksPagination').hidden = true;
             document.getElementById('stocksTableBody').innerHTML =
-                `<tr><td colspan="11" class="error">Error loading stocks: ${error.message}</td></tr>`;
+                `<tr><td colspan="10" class="error">Error loading stocks: ${error.message}</td></tr>`;
         }
     }
 
@@ -432,7 +371,7 @@ class VolatilityMonitor {
         const body = document.getElementById('stocksTableBody');
 
         if (!this.stocks.length) {
-            body.innerHTML = '<tr><td colspan="11" class="loading">No stocks configured</td></tr>';
+            body.innerHTML = '<tr><td colspan="10" class="loading">No stocks configured</td></tr>';
             this.updateStocksPaginationControls();
             return;
         }
@@ -442,27 +381,17 @@ class VolatilityMonitor {
         const pageStocks = this.stocks.slice(start, start + this.stocksPageSize);
 
         body.innerHTML = pageStocks.map(stock => {
-            const selected = stock.symbol === this.selectedSymbol ? 'selected' : '';
-            const changeClass = (stock.percent_change || 0) >= 0 ? 'change-up' : 'change-down';
-            const alertTitle = stock.alert_severity
-                ? `Latest alert: ${stock.alert_severity}${stock.alert_date ? ` — ${stock.alert_date}` : ''}`
-                : 'No stored alerts';
+                        const changeClass = (stock.percent_change || 0) >= 0 ? 'change-up' : 'change-down';
             const liveTitle = `Live move: ${stock.live_label || 'n/a'} (${this.formatPct(stock.percent_change)})`;
-            const alertDotClass = stock.alert_severity
-                ? `alert-dot severity-${stock.alert_severity}`
-                : 'alert-dot alert-none';
             const liveDotClass = stock.live_label && stock.live_label !== 'n/a'
                 ? `alert-dot severity-${stock.live_label}`
                 : `alert-dot alert-${stock.live || 'none'}`;
-            const alertDateHtml = stock.alert_date
-                ? `<span class="last-alert-date">${stock.alert_date}</span>`
-                : `<span class="last-alert-date muted">—</span>`;
             const sym = stock.symbol.toLowerCase();
             const stockUrl = `https://www.nasdaq.com/market-activity/stocks/${sym}`;
             const chainUrl = `https://www.nasdaq.com/market-activity/stocks/${sym}/option-chain`;
             const pinnedClass = stock.pinned ? ' stock-row--pinned' : '';
             return `
-                <tr class="stock-row ${selected}${pinnedClass}" data-symbol="${stock.symbol}">
+                <tr class="stock-row${pinnedClass}" data-symbol="${stock.symbol}">
                     <td class="col-pin">${this.renderPinButton(stock)}</td>
                     <td class="col-symbol">
                         <a class="nasdaq-link symbol-link" href="${stockUrl}" target="_blank" rel="noopener noreferrer">${stock.symbol}</a>
@@ -474,10 +403,6 @@ class VolatilityMonitor {
                     <td class="col-num num">${this.formatMoney(stock.previous_close)}</td>
                     <td class="col-num num">${stock.volume != null ? Number(stock.volume).toLocaleString() : '—'}</td>
                     <td class="col-session"><span class="session-badge session-${stock.market_session || 'closed'}">${this.sessionLabel(stock.market_session)}</span></td>
-                    <td class="col-status col-last-alert" data-action="load-alerts" title="${alertTitle}">
-                        <span class="${alertDotClass}"></span>
-                        ${alertDateHtml}
-                    </td>
                     <td class="col-status col-live">
                         <a class="nasdaq-link live-link" href="${chainUrl}" target="_blank" rel="noopener noreferrer" title="${liveTitle}">
                             <span class="${liveDotClass}"></span>
@@ -487,96 +412,6 @@ class VolatilityMonitor {
                 </tr>
             `;
         }).join('');
-    }
-
-    async selectStock(symbol) {
-        this.selectedSymbol = symbol;
-        localStorage.setItem('selectedSymbol', symbol);
-        this.alertPage = 1;
-
-        document.querySelectorAll('.stock-row').forEach(row => {
-            row.classList.toggle('selected', row.dataset.symbol === symbol);
-        });
-
-        await this.loadAlertHistory(symbol);
-    }
-
-    updatePaginationControls() {
-        const pagination = document.getElementById('alertPagination');
-        const info = document.getElementById('alertPageInfo');
-        const prevBtn = document.getElementById('alertPrevBtn');
-        const nextBtn = document.getElementById('alertNextBtn');
-
-        if (!this.selectedSymbol) {
-            pagination.hidden = true;
-            return;
-        }
-
-        pagination.hidden = false;
-        const totalPages = Math.max(1, Math.ceil(this.alertTotal / this.alertPageSize) || 1);
-        const start = this.alertTotal === 0 ? 0 : (this.alertPage - 1) * this.alertPageSize + 1;
-        const end = Math.min(this.alertPage * this.alertPageSize, this.alertTotal);
-
-        info.textContent = this.alertTotal === 0
-            ? '0 alerts'
-            : `${start}–${end} of ${this.alertTotal}`;
-
-        prevBtn.disabled = this.alertPage <= 1;
-        nextBtn.disabled = this.alertPage >= totalPages || this.alertTotal === 0;
-    }
-
-    async loadAlertHistory(symbol) {
-        const title = document.getElementById('alertHistoryTitle');
-        const hint = document.getElementById('alertHistoryHint');
-        const body = document.getElementById('alertsTableBody');
-
-        title.textContent = `Alert History — ${symbol}`;
-        hint.textContent = 'Historical alerts from scheduled volatility analysis.';
-        body.innerHTML = '<tr><td colspan="4" class="loading">Loading alerts...</td></tr>';
-
-        const skip = (this.alertPage - 1) * this.alertPageSize;
-
-        try {
-            const response = await fetch(
-                `/api/alerts?symbol=${encodeURIComponent(symbol)}&limit=${this.alertPageSize}&skip=${skip}`
-            );
-            const data = await response.json();
-            const alerts = data.items || [];
-            this.alertTotal = data.total || 0;
-
-            const totalPages = Math.max(1, Math.ceil(this.alertTotal / this.alertPageSize) || 1);
-            if (this.alertPage > totalPages) {
-                this.alertPage = totalPages;
-                if (this.alertTotal > 0) {
-                    await this.loadAlertHistory(symbol);
-                    return;
-                }
-            }
-
-            if (!alerts.length) {
-                body.innerHTML = '<tr><td colspan="4" class="loading">No alerts for this stock yet</td></tr>';
-                this.updatePaginationControls();
-                return;
-            }
-
-            body.innerHTML = alerts.map(alert => {
-                const severity = alert.severity || 'low';
-                return `
-                <tr>
-                    <td class="col-date">${alert.triggered_at_display || alert.triggered_at}</td>
-                    <td class="col-num col-change num change-severity-${severity}" title="Severity: ${severity}">${this.formatPct(alert.percent_change)}</td>
-                    <td class="col-num col-from num">${this.formatMoney(this.priceFrom(alert))}</td>
-                    <td class="col-num col-to num">${this.formatMoney(alert.price_at_trigger)}</td>
-                </tr>
-            `;
-            }).join('');
-
-            this.updatePaginationControls();
-        } catch (error) {
-            console.error('Error fetching alerts:', error);
-            body.innerHTML = `<tr><td colspan="4" class="error">Error loading alerts: ${error.message}</td></tr>`;
-            document.getElementById('alertPagination').hidden = true;
-        }
     }
 
     async fetchAndDisplayConfig() {
@@ -593,14 +428,6 @@ class VolatilityMonitor {
                 <div class="config-item">
                     <div class="config-label">Volatility Threshold</div>
                     <div class="config-value">${config.volatility_threshold}%</div>
-                </div>
-                <div class="config-item">
-                    <div class="config-label">Lookback Period</div>
-                    <div class="config-value">${config.lookback_days} days</div>
-                </div>
-                <div class="config-item">
-                    <div class="config-label">Analysis Interval</div>
-                    <div class="config-value">Every ${config.scheduler_interval_hours} hours</div>
                 </div>
                 <div class="config-item">
                     <div class="config-label">Timezone</div>
@@ -635,32 +462,17 @@ class VolatilityMonitor {
 
         this.isRefreshing = true;
         this.setRefreshButtonState('loading');
-
         try {
-            const response = await fetch('/api/refresh', { method: 'POST' });
-            const result = await response.json();
-
-            if (result.status === 'success') {
-                this.setRefreshButtonState('success');
-                setTimeout(async () => {
-                    this.setRefreshButtonState('idle');
-                    this.isRefreshing = false;
-                    await this.updateData();
-                    if (this.selectedSymbol) {
-                        await this.loadAlertHistory(this.selectedSymbol);
-                    }
-                }, 1500);
-            } else {
-                throw new Error(result.error || 'Refresh failed');
-            }
+            await this.updateData();
+            this.setRefreshButtonState('success');
         } catch (error) {
             console.error('Error refreshing:', error);
             this.setRefreshButtonState('error');
-            setTimeout(() => {
-                this.setRefreshButtonState('idle');
-                this.isRefreshing = false;
-            }, 2000);
         }
+        setTimeout(() => {
+            this.setRefreshButtonState('idle');
+            this.isRefreshing = false;
+        }, 1000);
     }
 
     updateTimestamp() {
