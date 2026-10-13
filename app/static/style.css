@@ -1409,3 +1409,5 @@ body {
 .session-regular { background:#16a34a33; color:#16a34a; }
 .session-pre, .session-post { background:#d9770633; color:#d97706; }
 .session-overnight { background:#6366f133; color:#6366f1; }
+
+.data-table .col-company { font-size: .72rem; max-width: 160px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text-muted, inherit); }

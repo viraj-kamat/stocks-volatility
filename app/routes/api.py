@@ -11,6 +11,7 @@ from app.config import app_config
 from app.data.fetcher import StockDataFetcher
 from app.data.cache import cache
 import logging
+import threading
 import time
 
 logger = logging.getLogger(__name__)
@@ -57,35 +58,50 @@ def _live_move_color(percent_change: Optional[float], threshold: float) -> dict:
     }
 
 
+_names_loading = threading.Lock()
+
+
+def _load_missing_names(symbols: list) -> None:
+    """Background fill of company names so /stocks is never blocked on Yahoo."""
+    if not _names_loading.acquire(blocking=False):
+        return
+    try:
+        fetcher = StockDataFetcher()
+        known = cache.get_company_names()
+        for symbol in symbols:
+            if symbol in known:
+                continue
+            name = fetcher.fetch_company_name(symbol)
+            if name:
+                cache.set_company_name(symbol, name)
+            time.sleep(0.4)
+    finally:
+        _names_loading.release()
+
+
+def _get_company_names(symbols: list) -> dict:
+    names = cache.get_company_names()
+    if any(s not in names for s in symbols):
+        threading.Thread(target=_load_missing_names, args=(list(symbols),), daemon=True).start()
+    return names
+
+
 def _get_realtime_quotes(symbols: list) -> dict:
-    """Fetch realtime quotes (Alpaca preferred), with Redis cache."""
+    """Fetch realtime quotes from Alpaca only, with a short Redis cache."""
+    from app.data.alpaca import alpaca_configured, fetch_snapshots
+
+    if not alpaca_configured():
+        raise HTTPException(
+            status_code=503,
+            detail="Alpaca API keys not set. Add ALPACA_API_KEY and ALPACA_API_SECRET to .env and restart.",
+        )
+
     cached = cache.get_cached_latest_prices()
     if cached and all(s in cached for s in symbols):
         return cached
 
-    quotes = {}
-    from app.data.alpaca import alpaca_configured, fetch_snapshots
-
-    if alpaca_configured():
-        raw = fetch_snapshots(symbols)
-        for symbol in symbols:
-            quote = raw.get(symbol) or raw.get(symbol.upper())
-            if quote:
-                quotes[symbol] = quote
-    else:
-        logger.warning("ALPACA_API_KEY/SECRET not set — live quotes fall back to Yahoo")
-
-    # Fill any missing symbols via Yahoo
-    missing = [s for s in symbols if s not in quotes]
-    if missing:
-        fetcher = StockDataFetcher()
-        for i, symbol in enumerate(missing):
-            if i > 0:
-                time.sleep(0.4)
-            quote = fetcher.fetch_realtime_quote(symbol)
-            if quote:
-                quotes[symbol] = quote
-
+    raw = fetch_snapshots(symbols)
+    quotes = {s: raw[s.upper()] for s in symbols if s.upper() in raw}
     if quotes:
         cache.cache_latest_prices(quotes, ttl_minutes=1)
     return quotes
@@ -99,6 +115,7 @@ def get_stocks(db: Session = Depends(get_db)):
         threshold = app_config.volatility_threshold
         quotes = _get_realtime_quotes(symbols)
         pinned = _pinned_map(db)
+        names = _get_company_names(symbols)
 
         result = []
         for symbol in symbols:
@@ -109,6 +126,7 @@ def get_stocks(db: Session = Depends(get_db)):
 
             result.append({
                 "symbol": symbol,
+                "name": names.get(symbol),
                 "current_price": quote.get("current_price"),
                 "open": quote.get("open"),
                 "high": quote.get("high"),
@@ -128,6 +146,8 @@ def get_stocks(db: Session = Depends(get_db)):
             })
 
         return result
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Error getting stocks: {e}")
         raise HTTPException(status_code=500, detail=str(e))

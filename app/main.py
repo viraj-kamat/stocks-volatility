@@ -32,7 +32,7 @@ async def lifespan(app: FastAPI):
     if settings.alpaca_api_key and settings.alpaca_api_secret:
         logger.info("Alpaca live quotes enabled (feed=%s)", settings.alpaca_data_feed or "auto")
     else:
-        logger.warning("Alpaca keys missing — live quotes will use Yahoo fallback")
+        logger.warning("Alpaca keys missing — live quotes are unavailable")
 
     yield
 
