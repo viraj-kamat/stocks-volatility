@@ -1,7 +1,6 @@
 import logging
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from apscheduler.schedulers.background import BackgroundScheduler
 from contextlib import asynccontextmanager
 import os
 
@@ -10,8 +9,6 @@ from app.routes import auth as auth_routes
 from app.routes import logs as logs_routes
 from app.routes.static import serve_static
 from app.config import app_config, settings
-from app.scheduler.jobs import run_analysis_job, cleanup_old_alerts
-from app.database.connection import SessionLocal
 from app.auth import AuthMiddleware, auth_enabled
 
 # Configure logging
@@ -20,10 +17,6 @@ logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
 logger = logging.getLogger(__name__)
-
-# Global scheduler
-scheduler = BackgroundScheduler()
-
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -41,54 +34,10 @@ async def lifespan(app: FastAPI):
     else:
         logger.warning("Alpaca keys missing — live quotes will use Yahoo fallback")
 
-    # Start scheduler
-    if not scheduler.running:
-        interval_hours = app_config.scheduler_interval_hours
-        scheduler.add_job(
-            run_analysis_job,
-            'interval',
-            hours=interval_hours,
-            id='analysis_job',
-            name='Stock Analysis Job',
-            replace_existing=True,
-        )
-
-        # Also run cleanup job daily
-        scheduler.add_job(
-            cleanup_old_alerts_wrapper,
-            'interval',
-            hours=24,
-            id='cleanup_job',
-            name='Alert Cleanup Job',
-            replace_existing=True,
-        )
-
-        scheduler.start()
-        logger.info(f"Scheduler started with {interval_hours}h interval")
-
-    # Run initial analysis
-    try:
-        logger.info("Running initial analysis...")
-        run_analysis_job()
-    except Exception as e:
-        logger.error(f"Initial analysis failed: {e}")
-
     yield
 
     # Shutdown
     logger.info("Shutting down StockSpikes")
-    if scheduler.running:
-        scheduler.shutdown()
-        logger.info("Scheduler stopped")
-
-
-def cleanup_old_alerts_wrapper():
-    """Wrapper for cleanup job to handle database session."""
-    db = SessionLocal()
-    try:
-        cleanup_old_alerts(db)
-    finally:
-        db.close()
 
 
 app = FastAPI(
