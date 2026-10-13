@@ -11,6 +11,7 @@ from app.config import app_config
 from app.data.fetcher import StockDataFetcher
 from app.data.cache import cache
 import logging
+import threading
 import time
 
 logger = logging.getLogger(__name__)
@@ -57,6 +58,34 @@ def _live_move_color(percent_change: Optional[float], threshold: float) -> dict:
     }
 
 
+_names_loading = threading.Lock()
+
+
+def _load_missing_names(symbols: list) -> None:
+    """Background fill of company names so /stocks is never blocked on Yahoo."""
+    if not _names_loading.acquire(blocking=False):
+        return
+    try:
+        fetcher = StockDataFetcher()
+        known = cache.get_company_names()
+        for symbol in symbols:
+            if symbol in known:
+                continue
+            name = fetcher.fetch_company_name(symbol)
+            if name:
+                cache.set_company_name(symbol, name)
+            time.sleep(0.4)
+    finally:
+        _names_loading.release()
+
+
+def _get_company_names(symbols: list) -> dict:
+    names = cache.get_company_names()
+    if any(s not in names for s in symbols):
+        threading.Thread(target=_load_missing_names, args=(list(symbols),), daemon=True).start()
+    return names
+
+
 def _get_realtime_quotes(symbols: list) -> dict:
     """Fetch realtime quotes (Alpaca preferred), with Redis cache."""
     cached = cache.get_cached_latest_prices()
@@ -99,6 +128,7 @@ def get_stocks(db: Session = Depends(get_db)):
         threshold = app_config.volatility_threshold
         quotes = _get_realtime_quotes(symbols)
         pinned = _pinned_map(db)
+        names = _get_company_names(symbols)
 
         result = []
         for symbol in symbols:
@@ -109,6 +139,7 @@ def get_stocks(db: Session = Depends(get_db)):
 
             result.append({
                 "symbol": symbol,
+                "name": names.get(symbol),
                 "current_price": quote.get("current_price"),
                 "open": quote.get("open"),
                 "high": quote.get("high"),

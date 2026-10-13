@@ -331,7 +331,7 @@ class VolatilityMonitor {
             this.stocks = [];
             document.getElementById('stocksPagination').hidden = true;
             document.getElementById('stocksTableBody').innerHTML =
-                `<tr><td colspan="10" class="error">Error loading stocks: ${error.message}</td></tr>`;
+                `<tr><td colspan="11" class="error">Error loading stocks: ${error.message}</td></tr>`;
         }
     }
 
@@ -371,7 +371,7 @@ class VolatilityMonitor {
         const body = document.getElementById('stocksTableBody');
 
         if (!this.stocks.length) {
-            body.innerHTML = '<tr><td colspan="10" class="loading">No stocks configured</td></tr>';
+            body.innerHTML = '<tr><td colspan="11" class="loading">No stocks configured</td></tr>';
             this.updateStocksPaginationControls();
             return;
         }
@@ -393,6 +393,7 @@ class VolatilityMonitor {
             return `
                 <tr class="stock-row${pinnedClass}" data-symbol="${stock.symbol}">
                     <td class="col-pin">${this.renderPinButton(stock)}</td>
+                    <td class="col-company" title="${stock.name || ''}">${stock.name || '—'}</td>
                     <td class="col-symbol">
                         <a class="nasdaq-link symbol-link" href="${stockUrl}" target="_blank" rel="noopener noreferrer">${stock.symbol}</a>
                     </td>

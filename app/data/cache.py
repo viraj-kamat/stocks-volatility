@@ -59,6 +59,20 @@ class RedisCache:
             logger.error(f"Error retrieving cached latest prices: {e}")
             return None
 
+    def get_company_names(self) -> dict:
+        """symbol → company name (long-lived cache)."""
+        try:
+            return self.redis_client.hgetall("company_names") or {}
+        except Exception as e:
+            logger.error(f"Error retrieving company names: {e}")
+            return {}
+
+    def set_company_name(self, symbol: str, name: str):
+        try:
+            self.redis_client.hset("company_names", symbol, name)
+        except Exception as e:
+            logger.error(f"Error caching company name for {symbol}: {e}")
+
     def clear_cache(self, pattern: str = "*"):
         """
         Clear cache entries matching a pattern.
